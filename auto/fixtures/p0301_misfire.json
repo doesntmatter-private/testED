@@ -1,0 +1,54 @@
+{
+  "vehicle": {
+    "year": 2014,
+    "make": "Honda",
+    "model": "Accord",
+    "engine": "2.4L K24W I4",
+    "mileage": 128400
+  },
+  "dtcs": [
+    {"code": "P0301", "status": "stored"},
+    {"code": "P0300", "status": "pending"}
+  ],
+  "freeze_frame": {
+    "RPM": {"value": 742, "unit": "rpm"},
+    "ENGINE_LOAD": {"value": 21.6, "unit": "%"},
+    "COOLANT_TEMP": {"value": 88, "unit": "degC"},
+    "SHORT_FUEL_TRIM_1": {"value": 6.2, "unit": "%"},
+    "LONG_FUEL_TRIM_1": {"value": 3.9, "unit": "%"},
+    "INTAKE_PRESSURE": {"value": 31, "unit": "kPa"},
+    "SPEED": {"value": 0, "unit": "km/h"},
+    "THROTTLE_POS": {"value": 12.5, "unit": "%"}
+  },
+  "live": {
+    "RPM": {"value": 715, "unit": "rpm"},
+    "ENGINE_LOAD": {"value": 24.3, "unit": "%"},
+    "COOLANT_TEMP": {"value": 91, "unit": "degC"},
+    "INTAKE_TEMP": {"value": 34, "unit": "degC"},
+    "SHORT_FUEL_TRIM_1": {"value": 5.5, "unit": "%"},
+    "LONG_FUEL_TRIM_1": {"value": 4.7, "unit": "%"},
+    "MAF": {"value": 3.1, "unit": "g/s"},
+    "INTAKE_PRESSURE": {"value": 33, "unit": "kPa"},
+    "THROTTLE_POS": {"value": 12.9, "unit": "%"},
+    "TIMING_ADVANCE": {"value": 9.5, "unit": "deg"},
+    "O2_B1S1": {"value": 0.42, "unit": "V"},
+    "O2_B1S2": {"value": 0.68, "unit": "V"},
+    "CONTROL_MODULE_VOLTAGE": {"value": 14.1, "unit": "V"},
+    "CATALYST_TEMP_B1S1": {"value": 412, "unit": "degC"},
+    "DISTANCE_SINCE_DTC_CLEAR": {"value": 212, "unit": "km"}
+  },
+  "readiness": {
+    "MIL": "on",
+    "DTC_count": "1",
+    "MISFIRE_MONITORING": "complete",
+    "FUEL_SYSTEM_MONITORING": "complete",
+    "CATALYST_MONITORING": "incomplete",
+    "EVAPORATIVE_SYSTEM_MONITORING": "incomplete"
+  },
+  "expected": {
+    "true_cause": "Cylinder 1 ignition coil failure",
+    "accept_titles": ["ignition coil", "coil"],
+    "confirming_test": "coil swap",
+    "relevant_docs": ["Misfire Isolation Workflow (P0300 to P0308)"]
+  }
+}

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autodiag"
+version = "0.1.0"
+description = "OBD-II + RAG + LLM engine diagnostic assistant (MVP)"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=1.6",
+    "pydantic>=2.7",
+    "typer>=0.12",
+    "rich>=13",
+    "obd>=0.7",
+    "pypdf>=4",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+autodiag = "autodiag.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["autodiag*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

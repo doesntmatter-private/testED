@@ -1,0 +1,48 @@
+{
+  "vehicle": {
+    "year": 2011,
+    "make": "Toyota",
+    "model": "Camry",
+    "engine": "2.5L 2AR-FE I4",
+    "mileage": 161200
+  },
+  "dtcs": [
+    {"code": "P0171", "status": "stored"}
+  ],
+  "freeze_frame": {
+    "RPM": {"value": 698, "unit": "rpm"},
+    "ENGINE_LOAD": {"value": 18.0, "unit": "%"},
+    "COOLANT_TEMP": {"value": 86, "unit": "degC"},
+    "SHORT_FUEL_TRIM_1": {"value": 14.8, "unit": "%"},
+    "LONG_FUEL_TRIM_1": {"value": 22.6, "unit": "%"},
+    "MAF": {"value": 2.4, "unit": "g/s"},
+    "INTAKE_PRESSURE": {"value": 46, "unit": "kPa"},
+    "SPEED": {"value": 0, "unit": "km/h"}
+  },
+  "live": {
+    "RPM": {"value": 2480, "unit": "rpm"},
+    "ENGINE_LOAD": {"value": 41.0, "unit": "%"},
+    "COOLANT_TEMP": {"value": 90, "unit": "degC"},
+    "INTAKE_TEMP": {"value": 38, "unit": "degC"},
+    "SHORT_FUEL_TRIM_1": {"value": 2.1, "unit": "%"},
+    "LONG_FUEL_TRIM_1": {"value": 5.3, "unit": "%"},
+    "MAF": {"value": 11.8, "unit": "g/s"},
+    "INTAKE_PRESSURE": {"value": 44, "unit": "kPa"},
+    "THROTTLE_POS": {"value": 24.0, "unit": "%"},
+    "O2_B1S1": {"value": 0.55, "unit": "V"},
+    "O2_B1S2": {"value": 0.71, "unit": "V"},
+    "CONTROL_MODULE_VOLTAGE": {"value": 14.3, "unit": "V"}
+  },
+  "readiness": {
+    "MIL": "on",
+    "DTC_count": "1",
+    "FUEL_SYSTEM_MONITORING": "complete",
+    "MISFIRE_MONITORING": "complete"
+  },
+  "expected": {
+    "true_cause": "Intake vacuum leak (cracked PCV hose)",
+    "accept_titles": ["vacuum leak", "unmetered air", "PCV"],
+    "confirming_test": "smoke test",
+    "relevant_docs": ["Lean Condition Workflow (P0171, P0174)"]
+  }
+}
