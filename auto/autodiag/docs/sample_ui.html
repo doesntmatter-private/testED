@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>autodiag · sample UI</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --ink: #1b1f24;
+  --dim: #6b7280;
+  --line: #e3e6ea;
+  --accent: #2563eb;
+  --accent-ink: #ffffff;
+  --ok: #15803d;
+  --warn: #b45309;
+  --bad: #b91c1c;
+  --info: #1d4ed8;
+  --chip: #eef2ff;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1216;
+    --card: #171b21;
+    --ink: #e6e8eb;
+    --dim: #9aa3ad;
+    --line: #2a3038;
+    --accent: #60a5fa;
+    --accent-ink: #0b1220;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --info: #93c5fd;
+    --chip: #1e2a44;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+h1 { font-size: 20px; margin: 0; }
+h2 { font-size: 16px; margin: 0 0 12px; }
+h3 { font-size: 14px; margin: 16px 0 6px; }
+.sub, .dim { color: var(--dim); font-size: 13px; }
+.hidden { display: none !important; }
+
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 24px; background: var(--card); border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 2; flex-wrap: wrap;
+}
+.brand { display: flex; gap: 12px; align-items: center; }
+.logo { font-size: 28px; }
+.status { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill {
+  font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--dim);
+}
+.pill.ok { color: var(--ok); border-color: var(--ok); }
+.pill.bad { color: var(--bad); border-color: var(--bad); }
+
+main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 40px; display: grid; gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+
+.row { display: flex; gap: 14px; align-items: flex-end; }
+.row.wrap { flex-wrap: wrap; }
+.row.actions { margin-top: 12px; align-items: center; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--dim); min-width: 180px; }
+label.check { flex-direction: row; align-items: center; min-width: 0; gap: 6px; color: var(--ink); }
+.inline { display: flex; gap: 6px; }
+input[type=text], input[type=search], select, textarea {
+  font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 9px; width: 100%;
+}
+textarea { resize: vertical; }
+input[type=file] { font-size: 13px; color: var(--ink); }
+button {
+  font: inherit; font-weight: 600; border-radius: 7px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); white-space: nowrap;
+}
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.busy { display: inline-flex; align-items: center; gap: 8px; color: var(--dim); font-size: 13px; }
+.spinner {
+  width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.error { margin-top: 10px; padding: 10px 12px; border-radius: 6px; color: var(--bad); border: 1px solid var(--bad); font-size: 14px; }
+.note { margin: 6px 0 10px; padding: 8px 10px; border-radius: 6px; color: var(--warn); border: 1px solid var(--warn); font-size: 13px; }
+
+.snapshot { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.snapshot .block { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.snapshot .block b { display: block; margin-bottom: 4px; }
+.code { font-family: var(--mono); font-size: 12.5px; }
+.dtc { display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; border-radius: 4px; background: var(--chip); font-family: var(--mono); }
+.pidgrid { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-family: var(--mono); font-size: 12px; }
+
+.banner { padding: 12px 14px; border-radius: 8px; border-left: 5px solid var(--info); background: var(--bg); margin-bottom: 14px; }
+.banner.drive_normally { border-color: var(--ok); }
+.banner.drive_with_caution { border-color: var(--warn); }
+.banner.limit_driving { border-color: #ea580c; }
+.banner.do_not_drive { border-color: var(--bad); }
+.banner .sev { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); }
+
+.cause { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+.cause-head { display: flex; align-items: baseline; gap: 10px; }
+.cause-head .rank { color: var(--dim); font-size: 13px; }
+.cause-head .title { font-weight: 600; flex: 1; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 6px 0 8px; }
+.bar > i { display: block; height: 100%; background: var(--accent); }
+.ev { margin: 3px 0; font-size: 13.5px; }
+.ev .kind { display: inline-block; min-width: 64px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--dim); }
+.ev.against .kind { color: var(--bad); }
+.cite { font-family: var(--mono); font-size: 12px; padding: 0 5px; border-radius: 4px; background: var(--chip); cursor: pointer; border: 0; color: var(--info); }
+.test { border-left: 3px solid var(--line); padding: 6px 12px; margin: 8px 0; }
+.test .name { font-weight: 600; }
+.test .meta { font-size: 12.5px; color: var(--dim); }
+.kv { display: grid; grid-template-columns: 90px 1fr; gap: 2px 8px; font-size: 13.5px; margin-top: 4px; }
+.kv b { color: var(--dim); font-weight: 500; }
+.chunk { margin: 6px 0 6px 74px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 10px; background: var(--bg); }
+.chunk-head { font-size: 13px; margin-bottom: 4px; }
+.chunk-text { white-space: pre-wrap; font-family: var(--mono); font-size: 12px; margin: 0; max-height: 240px; overflow: auto; }
+.footer-meta { font-family: var(--mono); font-size: 12px; color: var(--dim); margin-top: 12px; }
+pre.offline { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px; background: var(--bg); padding: 12px; border-radius: 8px; border: 1px solid var(--line); }
+
+.tabs { display: flex; gap: 6px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.tab { border: 0; background: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 8px 10px; color: var(--dim); font-weight: 500; }
+.tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+.tbl { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13.5px; }
+.tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th { color: var(--dim); font-weight: 500; font-size: 12px; }
+.tbl tr.click { cursor: pointer; }
+.tbl tr.click:hover td { background: var(--bg); }
+.tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--chip); }
+
+footer { text-align: center; color: var(--dim); font-size: 12.5px; padding: 10px 16px 30px; }
+
+@media (max-width: 640px) {
+  main { padding: 12px 10px 30px; }
+  .card { padding: 14px; }
+  label { min-width: 100%; }
+  .chunk { margin-left: 0; }
+}
+
+/* sample-only */
+.sample-banner { background: var(--chip); color: var(--info); text-align: center; font-size: 12.5px; padding: 6px 12px; }
+</style>
+</head>
+<body>
+<div class="sample-banner">Static sample of the autodiag web UI with a completed diagnosis. No server behind this page; buttons do nothing.</div>
+<header class="top">
+  <div class="brand">
+    <span class="logo">⚙</span>
+    <div>
+      <h1>autodiag</h1>
+      <div class="sub">OBD-II · service knowledge · ranked causes</div>
+    </div>
+  </div>
+  <div class="status">
+    <span class="pill ok">Claude ✓ claude-opus-5</span>
+    <span class="pill bad">Ollama ✗ qwen2.5:14b</span>
+    <span class="pill ok">KB 45 chunks</span>
+    <span class="pill ok">Queue 1 pending</span>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>1. Vehicle</h2>
+    <div class="row wrap">
+      <label>Fixture
+        <select><option>2014 Honda Accord · P0301, P0300</option><option>2011 Toyota Camry · P0171</option></select>
+      </label>
+      <label>or snapshot file <input type="file"></label>
+      <label>or adapter port
+        <span class="inline"><input type="text" placeholder="auto-detect"><button class="secondary">Scan</button></span>
+      </label>
+    </div>
+    <div class="snapshot">
+      <div class="block"><b>2014 Honda Accord 2.4L K24W I4</b>
+        <div class="dim">128400 mi · simulated:p0301_misfire.json</div>
+        <div style="margin-top:8px"><span class="dtc">P0301 <small>stored</small></span><span class="dtc">P0300 <small>pending</small></span></div>
+        <div class="dim" style="margin-top:6px">P0301: Cylinder 1 Misfire Detected<br>P0300: Random/Multiple Cylinder Misfire Detected</div>
+      </div>
+      <div class="block"><b>Freeze frame</b><div class="pidgrid">
+        <span>RPM</span><span>742 rpm</span><span>ENGINE_LOAD</span><span>21.6 %</span><span>COOLANT_TEMP</span><span>88 degC</span>
+        <span>SHORT_FUEL_TRIM_1</span><span>6.2 %</span><span>LONG_FUEL_TRIM_1</span><span>3.9 %</span><span>INTAKE_PRESSURE</span><span>31 kPa</span>
+        <span>SPEED</span><span>0 km/h</span><span>THROTTLE_POS</span><span>12.5 %</span></div></div>
+      <div class="block"><b>Live</b><div class="pidgrid">
+        <span>RPM</span><span>715 rpm</span><span>COOLANT_TEMP</span><span>91 degC</span><span>SHORT_FUEL_TRIM_1</span><span>5.5 %</span>
+        <span>LONG_FUEL_TRIM_1</span><span>4.7 %</span><span>MAF</span><span>3.1 g/s</span><span>INTAKE_PRESSURE</span><span>33 kPa</span>
+        <span>O2_B1S1</span><span>0.42 V</span><span>O2_B1S2</span><span>0.68 V</span><span>CONTROL_MODULE_VOLTAGE</span><span>14.1 V</span>
+        <span>CATALYST_TEMP_B1S1</span><span>412 degC</span></div></div>
+      <div class="block"><b>Readiness</b><div class="pidgrid">
+        <span>MIL</span><span>on</span><span>MISFIRE_MONITORING</span><span>complete</span><span>FUEL_SYSTEM_MONITORING</span><span>complete</span>
+        <span>CATALYST_MONITORING</span><span>incomplete</span><span>EVAPORATIVE_SYSTEM_MONITORING</span><span>incomplete</span></div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. Inputs</h2>
+    <label>Symptoms
+      <textarea rows="3">Rough idle and a shake at stoplights, worse when cold. Check engine light flashed once on the highway then stayed on.</textarea>
+    </label>
+    <div class="row wrap">
+      <label>Engine audio <input type="file"></label>
+      <label>Photos <input type="file" multiple></label>
+    </div>
+    <div class="row wrap options">
+      <label>Backend <select><option>default</option><option>Claude</option><option>Ollama (local)</option></select></label>
+      <label class="check"><input type="checkbox"> Redact VIN</label>
+      <label class="check"><input type="checkbox"> Strict citations</label>
+    </div>
+    <div class="row actions">
+      <button class="primary">Diagnose</button>
+      <button class="secondary">Offline report</button>
+      <button class="secondary">Queue for later</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3. Diagnosis</h2>
+    <div class="banner limit_driving">
+      <div class="sev">limit driving</div>
+      <div>Cylinder 1 is misfiring at idle on an otherwise healthy engine. The most likely cause is a failing ignition coil on that cylinder, with the spark plug a close second. The flashing check engine light means raw fuel reached the catalyst; keep trips short until repaired.</div>
+    </div>
+
+    <h3>Ranked causes</h3>
+
+    <div class="cause">
+      <div class="cause-head"><span class="rank">#1</span><span class="title">Cylinder 1 ignition coil failure</span><span class="code">48%</span></div>
+      <div class="bar"><i style="width:48%"></i></div>
+      <div>A single-cylinder misfire at warm idle with normal fuel trims and normal manifold vacuum points to a cylinder-specific ignition fault rather than a shared fuel or air problem. Coil-on-plug coils on this engine family are the most frequent single-cylinder failure, and the misfire worsening when cold fits a coil breaking down at higher secondary voltage demand.</div>
+      <div class="ev"><span class="kind">obd</span> <span class="code">P0301</span> Cylinder 1 misfire stored; P0300 only pending, so the pattern is cylinder-specific.</div>
+      <div class="ev"><span class="kind">obd</span> <span class="code">LONG_FUEL_TRIM_1</span> LTFT +4.7% and STFT +5.5% are within normal range, arguing against a lean misfire.</div>
+      <div class="ev"><span class="kind">manual</span> <button class="cite">c1</button> "For a single-cylinder misfire on a modern coil-on-plug engine, in rough order of frequency: ignition coil, spark plug, fuel injector..."</div>
+      <div class="chunk" data-h="c1">
+        <div class="chunk-head"><b class="handle">[c1]</b> <span class="title">Misfire Isolation Workflow (P0300 to P0308)</span> <span class="loc dim">section "Common causes by frequency"</span></div>
+        <pre class="chunk-text">For a single-cylinder misfire on a modern coil-on-plug engine, in rough order of frequency: ignition coil, spark plug, fuel injector, valve or compression problem, wiring or connector to the coil or injector, intake gasket leak near that runner.</pre>
+      </div>
+      <div class="ev"><span class="kind">symptom</span> Shake at stoplights and rough idle match an idle-load misfire.</div>
+      <div class="ev against"><span class="kind">against</span> No P0351 coil circuit code, so the primary circuit is intact; a coil can fail on the secondary side without setting one.</div>
+    </div>
+
+    <div class="cause">
+      <div class="cause-head"><span class="rank">#2</span><span class="title">Worn or fouled spark plug, cylinder 1</span><span class="code">27%</span></div>
+      <div class="bar"><i style="width:27%"></i></div>
+      <div>At 128,400 miles the plugs may be past their service interval. A plug with an opened gap raises voltage demand and misfires first at idle and under cold-start enrichment. The swap test separates this from the coil in one step.</div>
+      <div class="ev"><span class="kind">obd</span> <span class="code">P0301</span> Same cylinder-specific evidence as the coil.</div>
+      <div class="ev"><span class="kind">manual</span> <button class="cite">c3</button> Plug reading guide: wet with fuel indicates no spark, worn gap beyond specification calls for replacement.</div>
+      <div class="ev"><span class="kind">general_knowledge</span> Iridium plugs on this engine are typically due around 100,000 miles.</div>
+      <div class="ev against"><span class="kind">against</span> Plug wear usually affects all cylinders similarly; a single-cylinder fault slightly favors the coil.</div>
+    </div>
+
+    <div class="cause">
+      <div class="cause-head"><span class="rank">#3</span><span class="title">Restricted or weak fuel injector, cylinder 1</span><span class="code">15%</span></div>
+      <div class="bar"><i style="width:15%"></i></div>
+      <div>A partially clogged injector leans out one cylinder and produces an idle misfire that improves as airflow rises. The mildly positive fuel trim is consistent but not diagnostic.</div>
+      <div class="ev"><span class="kind">manual</span> <button class="cite">c5</button> Injector balance test: a drop much smaller than the others indicates a restricted injector.</div>
+      <div class="ev against"><span class="kind">against</span> Bank fuel trim is only +4.7%; a significantly restricted injector usually pushes trims higher.</div>
+    </div>
+
+    <div class="cause">
+      <div class="cause-head"><span class="rank">#4</span><span class="title">Low compression on cylinder 1 (valve or ring)</span><span class="code">10%</span></div>
+      <div class="bar"><i style="width:10%"></i></div>
+      <div>Mechanical causes are less common but must be ruled out if ignition and fuel test good. Normal manifold vacuum at idle argues against a large leak but does not exclude a single tight valve.</div>
+      <div class="ev"><span class="kind">obd</span> <span class="code">INTAKE_PRESSURE</span> 33 kPa at idle indicates normal overall vacuum.</div>
+      <div class="ev"><span class="kind">manual</span> <button class="cite">c6</button> Compression should be within 10 percent across cylinders; wet test separates rings from valves.</div>
+    </div>
+
+    <h3>Next tests, in order</h3>
+
+    <div class="test">
+      <div class="name">1. Coil swap test <span class="meta">~30 min · basic hand tools, scan tool · source <button class="cite">c2</button></span></div>
+      <div>Engine off and cool. Move the cylinder 1 coil to cylinder 3 and the cylinder 3 coil to cylinder 1; mark them. Clear codes, idle 10 to 15 minutes under the freeze-frame conditions, and re-read codes.</div>
+      <div class="kv">
+        <b>Splits</b><span>Cylinder 1 ignition coil failure, Worn or fouled spark plug cylinder 1, Restricted or weak fuel injector cylinder 1, Low compression on cylinder 1</span>
+        <b>If faulty</b><span>Misfire code moves to P0303. Replace the coil.</span>
+        <b>If OK</b><span>P0301 returns on cylinder 1. Coil is good; proceed to the plug.</span>
+      </div>
+    </div>
+    <div class="test">
+      <div class="name">2. Inspect and swap spark plug <span class="meta">~20 min · plug socket, gap gauge · source <button class="cite">c3</button></span></div>
+      <div>Remove the cylinder 1 plug. Read the tip for fuel wetting, oil, or fouling and check the gap against specification. Swap with cylinder 3 and repeat the drive cycle.</div>
+      <div class="kv">
+        <b>Splits</b><span>Worn or fouled spark plug cylinder 1</span>
+        <b>If faulty</b><span>Misfire moves with the plug, or the plug is visibly worn or fouled. Replace all four.</span>
+        <b>If OK</b><span>Misfire stays on cylinder 1 with a clean, correctly gapped plug.</span>
+      </div>
+    </div>
+    <div class="test">
+      <div class="name">3. Injector balance and audible check <span class="meta">~25 min · stethoscope, scan tool with injector balance · source <button class="cite">c5</button></span></div>
+      <div>Listen at each injector for a steady click. Run the injector balance test and compare the cylinder 1 pressure drop to the others.</div>
+      <div class="kv">
+        <b>Splits</b><span>Restricted or weak fuel injector cylinder 1</span>
+        <b>If faulty</b><span>Cylinder 1 drop is markedly smaller than the rest, or the injector is silent.</span>
+        <b>If OK</b><span>All four drops within about 10% of each other.</span>
+      </div>
+    </div>
+    <div class="test">
+      <div class="name">4. Compression test, all cylinders <span class="meta">~45 min · compression gauge · source <button class="cite">c6</button></span></div>
+      <div>Remove all plugs, disable fuel, crank each cylinder the same number of strokes. If cylinder 1 is low, add a small amount of oil and retest.</div>
+      <div class="kv">
+        <b>Splits</b><span>Low compression on cylinder 1</span>
+        <b>If faulty</b><span>Cylinder 1 more than 10% below the others.</span>
+        <b>If OK</b><span>All cylinders within 10%.</span>
+      </div>
+    </div>
+
+    <h3>Missing information</h3>
+    <ul>
+      <li>Misfire counter per cylinder (Mode 06) to confirm cylinder 1 is the only contributor and P0300 is not masking a second cylinder.</li>
+      <li>Service history: when were plugs or coils last replaced?</li>
+      <li>Whether the misfire is present at 2500 rpm in neutral, which separates idle-only from load-dependent causes.</li>
+    </ul>
+
+    <h3>Safety</h3>
+    <ul>
+      <li>A flashing check engine light indicates a catalyst-damaging misfire rate. Limit driving until repaired.</li>
+      <li>Let the engine cool before handling coils; the exhaust manifold is adjacent on this engine.</li>
+    </ul>
+
+    <div class="footer-meta">backend=claude model=claude-opus-5 · tokens in/out 9840/2610 · cache_read 1840 · invalid_citations 0 · saved as diagnosis-20260927-091412</div>
+  </section>
+
+  <section class="card">
+    <h2>Knowledge, queue, history</h2>
+    <div class="tabs">
+      <button class="tab active">Knowledge base</button>
+      <button class="tab">Queue</button>
+      <button class="tab">Past reports</button>
+    </div>
+    <div class="row wrap">
+      <label>Upload manuals (PDF, Markdown, text) <input type="file" multiple></label>
+      <button class="secondary">Ingest</button>
+      <button class="secondary">Load seed workflows</button>
+    </div>
+    <div class="row"><input type="search" placeholder="Search the knowledge base…"><button class="secondary">Search</button></div>
+    <table class="tbl">
+      <thead><tr><th>Title</th><th>Chunks</th><th>Path</th></tr></thead>
+      <tbody>
+        <tr><td>Airflow and Manifold Pressure Sensor Plausibility (P0101, P0102, P0106)</td><td>8</td><td class="dim">knowledge/seed/airflow_sensors.md</td></tr>
+        <tr><td>Catalyst Efficiency Workflow (P0420, P0430)</td><td>7</td><td class="dim">knowledge/seed/catalyst_efficiency.md</td></tr>
+        <tr><td>Evaporative Emission Leak Workflow (P0440, P0442, P0455, P0456)</td><td>7</td><td class="dim">knowledge/seed/evap_leaks.md</td></tr>
+        <tr><td>Lean Condition Workflow (P0171, P0174)</td><td>8</td><td class="dim">knowledge/seed/lean_condition.md</td></tr>
+        <tr><td>Misfire Isolation Workflow (P0300 to P0308)</td><td>8</td><td class="dim">knowledge/seed/misfire_isolation.md</td></tr>
+        <tr><td>Coolant Temperature Workflow (P0128, P0116, P0117, P0118)</td><td>7</td><td class="dim">knowledge/seed/thermostat_and_ect.md</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer>Decision support, not a substitute for a technician. Fuel systems hold pressure; exhausts are hot; the model can be wrong.</footer>
+</body>
+</html>
