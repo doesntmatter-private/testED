@@ -38,7 +38,8 @@ class Job:
         return self.path.name
 
 
-def enqueue(p: Prepared, queue_dir: Path = config.QUEUE_DIR) -> Job:
+def enqueue(p: Prepared, queue_dir: Path | None = None) -> Job:
+    queue_dir = queue_dir or config.QUEUE_DIR
     queue_dir.mkdir(parents=True, exist_ok=True)
     ident = p.snapshot.vehicle.vin or p.snapshot.source.split(":")[-1].replace(".json", "") or "job"
     stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -68,7 +69,8 @@ def enqueue(p: Prepared, queue_dir: Path = config.QUEUE_DIR) -> Job:
     return Job(job_dir)
 
 
-def list_jobs(queue_dir: Path = config.QUEUE_DIR) -> list[Job]:
+def list_jobs(queue_dir: Path | None = None) -> list[Job]:
+    queue_dir = queue_dir or config.QUEUE_DIR
     if not queue_dir.exists():
         return []
     return [Job(p) for p in sorted(queue_dir.iterdir()) if (p / "prepared.json").exists()]
@@ -79,7 +81,7 @@ def load_prepared(job: Job) -> Prepared:
 
 
 def drain(
-    queue_dir: Path = config.QUEUE_DIR,
+    queue_dir: Path | None = None,
     client: anthropic.Anthropic | None = None,
     render=None,
     backend=None,
@@ -89,6 +91,7 @@ def drain(
     Failures leave the job in place for the next drain. A refusal is recorded
     but the job is also left in place so the user can inspect it.
     """
+    queue_dir = queue_dir or config.QUEUE_DIR
     if backend is None:
         from .backends import ClaudeBackend, make_backend
 

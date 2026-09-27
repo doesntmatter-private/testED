@@ -9,6 +9,7 @@ Schema:
 from __future__ import annotations
 
 import sqlite3
+import threading
 import time
 from pathlib import Path
 
@@ -47,22 +48,35 @@ END;
 
 
 class KnowledgeStore:
+    """SQLite-backed chunk store.
+
+    One connection, guarded by a lock, so the store can be shared across the
+    web server's worker threads. SQLite serializes writes anyway; the lock
+    keeps cursor use from interleaving.
+    """
+
     def __init__(self, path: str | Path = ":memory:"):
         self.path = str(path)
         if self.path != ":memory:":
             Path(self.path).parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(self.path)
+        self._lock = threading.RLock()
+        self.conn = sqlite3.connect(self.path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA foreign_keys = ON")
         self.conn.executescript(SCHEMA)
 
+    def _fetchall(self, sql: str, params: tuple = ()) -> list[sqlite3.Row]:
+        with self._lock:
+            return self.conn.execute(sql, params).fetchall()
+
+    def _fetchone(self, sql: str, params: tuple = ()):
+        with self._lock:
+            return self.conn.execute(sql, params).fetchone()
+
     # ---- documents -------------------------------------------------------
 
     def has_document_hash(self, content_hash: str) -> bool:
-        row = self.conn.execute(
-            "SELECT 1 FROM documents WHERE content_hash = ?", (content_hash,)
-        ).fetchone()
-        return row is not None
+        return self._fetchone("SELECT 1 FROM documents WHERE content_hash = ?", (content_hash,)) is not None
 
     def add_document(
         self,
@@ -73,7 +87,7 @@ class KnowledgeStore:
         chunks: list[tuple[int, int | None, str | None, str]],
     ) -> int:
         """Insert a document and its chunks. chunks = (position, page, section, text)."""
-        with self.conn:
+        with self._lock, self.conn:
             self.conn.execute(
                 "INSERT INTO documents(doc_id, title, path, content_hash, ingested_at) VALUES (?,?,?,?,?)",
                 (doc_id, title, path, content_hash, time.time()),
@@ -88,19 +102,19 @@ class KnowledgeStore:
         return len(chunks)
 
     def remove_document(self, doc_id: str) -> None:
-        with self.conn:
+        with self._lock, self.conn:
             self.conn.execute("DELETE FROM chunks WHERE doc_id = ?", (doc_id,))
             self.conn.execute("DELETE FROM documents WHERE doc_id = ?", (doc_id,))
 
     def list_documents(self) -> list[sqlite3.Row]:
-        return self.conn.execute(
+        return self._fetchall(
             """SELECT d.doc_id, d.title, d.path, d.ingested_at, COUNT(c.chunk_id) AS n_chunks
                FROM documents d LEFT JOIN chunks c ON c.doc_id = d.doc_id
                GROUP BY d.doc_id ORDER BY d.ingested_at"""
-        ).fetchall()
+        )
 
     def count_chunks(self) -> int:
-        return self.conn.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
+        return self._fetchone("SELECT COUNT(*) FROM chunks")[0]
 
     # ---- search ------------------------------------------------------------
 
@@ -109,7 +123,7 @@ class KnowledgeStore:
         if not query.strip():
             return []
         try:
-            rows = self.conn.execute(
+            rows = self._fetchall(
                 """SELECT c.chunk_id, c.doc_id, d.title, c.page, c.section, c.text,
                           bm25(chunks_fts) AS score
                    FROM chunks_fts
@@ -119,7 +133,7 @@ class KnowledgeStore:
                    ORDER BY score
                    LIMIT ?""",
                 (query, limit),
-            ).fetchall()
+            )
         except sqlite3.OperationalError:
             # Malformed FTS expression; treat as no results rather than crash.
             return []
@@ -140,13 +154,14 @@ class KnowledgeStore:
         if not chunk_ids:
             return []
         marks = ",".join("?" * len(chunk_ids))
-        rows = self.conn.execute(
+        rows = self._fetchall(
             f"""SELECT c.chunk_id, c.doc_id, d.title, c.page, c.section, c.text
                 FROM chunks c JOIN documents d ON d.doc_id = c.doc_id
                 WHERE c.chunk_id IN ({marks})""",
-            chunk_ids,
-        ).fetchall()
+            tuple(chunk_ids),
+        )
         return [Chunk(**{k: r[k] for k in r.keys()}) for r in rows]
 
     def close(self) -> None:
-        self.conn.close()
+        with self._lock:
+            self.conn.close()

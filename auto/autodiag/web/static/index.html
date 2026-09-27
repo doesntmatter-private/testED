@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>autodiag</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo">⚙</span>
+    <div>
+      <h1>autodiag</h1>
+      <div class="sub">OBD-II · service knowledge · ranked causes</div>
+    </div>
+  </div>
+  <div id="status" class="status">
+    <span class="pill" data-k="claude">Claude …</span>
+    <span class="pill" data-k="ollama">Ollama …</span>
+    <span class="pill" data-k="kb">KB …</span>
+    <span class="pill" data-k="queue">Queue …</span>
+  </div>
+</header>
+
+<main>
+  <section class="card" id="vehicle">
+    <h2>1. Vehicle</h2>
+    <div class="row wrap">
+      <label>Fixture
+        <select id="fixture"><option value="">— choose —</option></select>
+      </label>
+      <label>or snapshot file
+        <input type="file" id="snapshotFile" accept="application/json">
+      </label>
+      <label>or adapter port
+        <span class="inline">
+          <input type="text" id="port" placeholder="auto-detect">
+          <button id="scanBtn" class="secondary">Scan</button>
+        </span>
+      </label>
+    </div>
+    <div id="snapshotView" class="snapshot hidden"></div>
+  </section>
+
+  <section class="card" id="inputs">
+    <h2>2. Inputs</h2>
+    <label>Symptoms
+      <textarea id="symptoms" rows="3" placeholder="Rough idle when cold, shakes at stoplights, CEL flashed on the highway…"></textarea>
+    </label>
+    <div class="row wrap">
+      <label>Engine audio <input type="file" id="audio" accept="audio/*,.wav"></label>
+      <label>Photos <input type="file" id="images" accept="image/*" multiple></label>
+    </div>
+    <div class="row wrap options">
+      <label>Backend
+        <select id="backend">
+          <option value="">default</option>
+          <option value="claude">Claude</option>
+          <option value="ollama">Ollama (local)</option>
+        </select>
+      </label>
+      <label id="localModelWrap" class="hidden">Local model <input type="text" id="localModel" placeholder="qwen2.5:14b"></label>
+      <label class="check"><input type="checkbox" id="noVin"> Redact VIN</label>
+      <label class="check"><input type="checkbox" id="strict"> Strict citations</label>
+    </div>
+    <div class="row actions">
+      <button id="diagnoseBtn" class="primary" disabled>Diagnose</button>
+      <button id="offlineBtn" class="secondary" disabled>Offline report</button>
+      <button id="queueBtn" class="secondary" disabled>Queue for later</button>
+      <span id="busy" class="busy hidden"><span class="spinner"></span> <span id="busyText">Working…</span></span>
+    </div>
+    <div id="error" class="error hidden"></div>
+  </section>
+
+  <section class="card hidden" id="results">
+    <h2>3. Diagnosis</h2>
+    <div id="resultBody"></div>
+  </section>
+
+  <section class="card" id="tools">
+    <h2>Knowledge, queue, history</h2>
+    <div class="tabs">
+      <button class="tab active" data-tab="kb">Knowledge base</button>
+      <button class="tab" data-tab="queue">Queue</button>
+      <button class="tab" data-tab="reports">Past reports</button>
+    </div>
+    <div class="tabpane" id="tab-kb">
+      <div class="row wrap">
+        <label>Upload manuals (PDF, Markdown, text) <input type="file" id="kbFiles" multiple accept=".pdf,.md,.markdown,.txt"></label>
+        <button id="kbUpload" class="secondary">Ingest</button>
+        <button id="kbSeed" class="secondary">Load seed workflows</button>
+      </div>
+      <div class="row">
+        <input type="search" id="searchQ" placeholder="Search the knowledge base…">
+        <button id="searchBtn" class="secondary">Search</button>
+      </div>
+      <div id="searchResults"></div>
+      <table class="tbl" id="kbTable"><thead><tr><th>Title</th><th>Chunks</th><th>Path</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="tabpane hidden" id="tab-queue">
+      <div class="row"><button id="drainBtn" class="secondary">Send queued jobs</button></div>
+      <table class="tbl" id="queueTable"><thead><tr><th>Job</th><th>Status</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="tabpane hidden" id="tab-reports">
+      <table class="tbl" id="reportsTable"><thead><tr><th>When</th><th>Severity</th><th>Top cause</th><th>Model</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+</main>
+
+<footer>Decision support, not a substitute for a technician. Fuel systems hold pressure; exhausts are hot; the model can be wrong.</footer>
+
+<template id="chunkTpl">
+  <div class="chunk">
+    <div class="chunk-head"><b class="handle"></b> <span class="title"></span> <span class="loc dim"></span></div>
+    <pre class="chunk-text"></pre>
+  </div>
+</template>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

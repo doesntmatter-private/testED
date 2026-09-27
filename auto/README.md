@@ -32,6 +32,20 @@ autodiag diagnose --snapshot snapshot.json \
 
 Omit `--port` to auto-detect the adapter. Use `--slow` for flaky ELM327 clones.
 
+## Web UI
+
+```bash
+pip install -e ".[web]"
+autodiag serve                 # http://127.0.0.1:8765
+```
+
+Pick a fixture, upload a snapshot, or scan an adapter; type symptoms; drop in
+audio or photos; choose the backend; click Diagnose. Citations like `c3` in
+the result expand the cited manual excerpt inline. Tabs below the results
+manage the knowledge base, the offline queue, and past reports. The UI has no
+authentication, so keep it on `127.0.0.1` unless you know who can reach the
+host. API docs are at `/api/docs`.
+
 ## Offline
 
 | Command | Behavior |
@@ -104,7 +118,8 @@ pytest
 Tests cover OBD parsing, ingestion and chunking, retrieval ranking, flag
 rules, citation validation, the offline report, the queue round-trip (with a
 fake API client), both model backends (with fake Claude and Ollama servers),
-and audio feature extraction. No network is needed.
+the web API (FastAPI test client), and audio feature extraction. No network
+is needed.
 
 ## Layout
 
@@ -115,6 +130,7 @@ autodiag/
   knowledge/     SQLite FTS5 store, ingest, deterministic queries + RRF retriever
   reasoning/     flags, prompt, backends (Claude, Ollama), citation validation, offline report, queue
   media/         audio features (numpy), video frame sampling (ffmpeg)
+  web/           FastAPI app + single-page UI (no build step)
   cli.py
 knowledge/seed/  generic troubleshooting workflows (misfire, lean, catalyst, EVAP, thermostat, airflow)
 fixtures/        vehicle snapshots with an `expected` block for evals

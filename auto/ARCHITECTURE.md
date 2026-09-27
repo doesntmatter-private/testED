@@ -68,9 +68,12 @@ autodiag/
   media/
     audio.py           WAV load, FFT peaks, impulse-rate autocorrelation
     video.py           ffmpeg frame sampling
+  web/
+    app.py             FastAPI app: JSON endpoints over the same pipeline functions
+    static/            index.html, style.css, app.js (vanilla, no build step)
 knowledge/seed/        six generic troubleshooting workflows (Markdown)
 fixtures/              vehicle snapshots with an `expected` block
-tests/                 39 tests, no network
+tests/                 48 tests, no network
 ```
 
 ## 3. Data model
@@ -330,6 +333,7 @@ Typer commands map to the pipeline as follows:
 | `diagnose --drain` | `q.drain(render=render_result)` |
 | `queue-list` | `q.list_jobs()` |
 | `demo` | `ingest_path(seed)` then `diagnose(fixture=p0301)` |
+| `serve` | `uvicorn.run(autodiag.web.app:app)` on 127.0.0.1:8765 by default |
 
 `diagnose` decision order: `--drain` first; else load snapshot (file,
 fixture, or adapter); analyze audio and video; `prepare`; then `--queue`,
@@ -341,6 +345,39 @@ A local-model result prints a caution line after the footer. Rendering uses rich
 Exit codes: 0 success; 1 offline fallback after a mid-request connection
 drop or a drain with no connectivity; 2 refusal, credential, rate-limit, or
 API status errors.
+
+### 4.6 web/
+
+`create_app(store)` builds a FastAPI app; module-level `app` is what
+`autodiag serve` hands to uvicorn. The app holds one `KnowledgeStore`
+(guarded by a lock, since sync endpoints run in a thread pool) and a temp
+directory for uploaded media.
+
+| Method and path | Calls |
+|---|---|
+| `GET /` and `/static/*` | serves the single-page UI |
+| `GET /api/health` | backend probes, `store.count_chunks()`, pending queue count |
+| `GET /api/fixtures` | lists `fixtures/*.json` with a label |
+| `POST /api/scan` | `open_reader(fixture or port).read()` |
+| `POST /api/diagnose` (multipart) | `prepare` then `render_offline_report`, or `choose_backend` and `call_model`; saves a report |
+| `POST /api/queue`, `GET /api/queue`, `POST /api/queue/drain` | `q.enqueue`, `q.list_jobs`, `q.drain` |
+| `GET /api/knowledge`, `POST /api/knowledge`, `POST /api/knowledge/seed` | `store.list_documents`, `ingest_path` on uploads or the seed dir |
+| `GET /api/search?q_=` | `Retriever.search_text` |
+| `GET /api/reports`, `GET /api/reports/{name}` | reads `REPORTS_DIR/diagnosis-*.json` |
+
+`/api/diagnose` returns `{"kind": "diagnosis", "result": DiagnosisResult, ...}`
+or `{"kind": "offline", "report": str, ...}`; both carry `flags` and
+`chunks`. Error mapping: bad snapshot 400, no credentials 401, refusal 422,
+rate limit 429, schema mismatch or API error 502, adapter or backend
+unreachable 503. Fixture names are reduced to their basename so the endpoint
+cannot read outside `fixtures/`.
+
+The frontend is one HTML file, one stylesheet, and one script. `app.js`
+keeps two pieces of state: the current snapshot and the chunk map from the
+last result. Rendering escapes every model-supplied string. A citation
+handle in the result is a button that inserts the cited chunk inline, which
+is the same checkable-citation property the CLI report has. Past reports
+render through the same function as fresh results.
 
 ## 5. Request to the model
 
@@ -445,7 +482,7 @@ connection exists.
 
 ## 9. Testing
 
-39 tests under `tests/`, all offline, about 2 s:
+48 tests under `tests/`, all offline, about 3 s:
 
 - `test_obd.py`: fixture parsing, description fill-in, VIN redaction.
 - `test_knowledge.py`: idempotent ingest, heading preservation, chunk
@@ -457,6 +494,10 @@ connection exists.
   block filtering, probe host parsing.
 - `test_queue.py`: `call_model` against a fake client (parse, validate,
   usage, refusal), enqueue with media copy, drain with failure then success.
+- `test_web.py`: static serving, health and fixtures, scan with path
+  traversal blocked, offline diagnose, invalid snapshot, backend-unreachable
+  fallback, a full diagnose through a fake Ollama with an image upload and
+  report round-trip, queue endpoints, knowledge upload and search.
 - `test_backends.py`: Ollama request shape including images and schema,
   fence stripping and the JSON repair round-trip, truncation retry, the
   "model not pulled" and unreachable paths, Claude not retrying on bad JSON,

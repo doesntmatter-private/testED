@@ -432,6 +432,58 @@ Design choices:
   local model. Until that exists, treat the local path as a convenience,
   not a peer of the default.
 
+## 4.8 Web frontend
+
+The CLI stays the primary interface for scripting and evals, but a browser
+UI lowers the bar for a technician at a bench and makes media inputs
+(photos, audio) far easier to supply than typing paths.
+
+Principles:
+
+- **Thin.** The web layer calls the same `prepare`, `call_model`,
+  `render_offline_report`, and queue functions the CLI uses. No diagnostic
+  logic lives in the web code.
+- **No build step.** One HTML file, one stylesheet, one script, served by
+  the same Python process. No Node, no bundler, no framework. This keeps
+  the project installable with `pip` alone.
+- **Local by default.** `autodiag serve` binds to `127.0.0.1:8765`. There
+  is no authentication, so the doc and the startup banner say plainly that
+  binding to other interfaces exposes the knowledge base and API spend to
+  the network.
+- **Same files.** Reports, queue jobs, and the knowledge base are the same
+  paths the CLI uses, so the two interfaces see each other's work.
+
+Server: FastAPI with uvicorn, added as an optional extra (`pip install
+-e ".[web]"`). Endpoints:
+
+| Method and path | Purpose |
+|---|---|
+| `GET /` | the single-page app |
+| `GET /api/health` | backend names, reachability, KB chunk count, queue depth |
+| `GET /api/fixtures` | bundled fixtures for the vehicle picker |
+| `POST /api/scan` | `{fixture}` or `{port}` to snapshot; returns `VehicleSnapshot` |
+| `POST /api/diagnose` | multipart: snapshot JSON, symptoms, backend, flags, audio, images; returns `DiagnosisResult` or an offline report |
+| `POST /api/queue` | same inputs, saves a job |
+| `GET /api/queue`, `POST /api/queue/drain` | list and send |
+| `GET /api/knowledge`, `POST /api/knowledge` | list documents, upload and ingest files |
+| `GET /api/search?q=` | retrieval debugging |
+| `GET /api/reports`, `GET /api/reports/{name}` | saved results |
+
+Frontend layout, top to bottom: a status strip (backend reachable, KB size,
+queue depth); a vehicle panel (pick a fixture, upload a snapshot, or scan a
+port, then a read-only view of codes and key PIDs); an inputs panel
+(symptoms, backend choice, VIN redaction, audio and image drop zones); a
+results panel that renders the severity banner, the causes table with
+evidence and contradicting evidence, the ordered tests, missing information,
+safety notes, and the validation footer. Handles like `c3` are rendered as
+links that expand the cited chunk inline, which is the checkable-citation
+property carried through to the screen.
+
+The diagnose request is synchronous. Claude answers in tens of seconds and
+a local model in a few minutes, so the UI shows a progress state and the
+server timeout is set generously. Streaming or job polling is an M2 item if
+the local path proves too slow for a blocking request.
+
 ## 5. Data flow, one request
 
 ```

@@ -18,13 +18,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+web = ["fastapi>=0.115", "uvicorn[standard]>=0.30", "python-multipart>=0.0.9"]
+dev = ["pytest>=8", "httpx>=0.27", "fastapi>=0.115", "uvicorn[standard]>=0.30", "python-multipart>=0.0.9"]
 
 [project.scripts]
 autodiag = "autodiag.cli:app"
 
 [tool.setuptools.packages.find]
 include = ["autodiag*"]
+
+[tool.setuptools.package-data]
+autodiag = ["web/static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,0 +1,42 @@
+Some NVLinks went down (reason unknown), but the GPUs were still alive and responding.
+[Jul 06 2026 15:43:33] [INFO] [tid 167] Switch Health for chassisId 1, slotNumber 17, hostId 1, switchId 2 is set to MISSING_NVLINK
+[Jul 06 2026 15:43:33] [INFO] [tid 167] Switch Node  Health for chassisId 1, slotNumber 17, hostId 1 is set to MISSING_NVLINK
+
+GPUs were discoverd by the fabric manager, but some switch is still in unhealthy state.
+[Jul 06 2026 15:43:33] [INFO] [tid 167] Switch Node  Health for chassisId 1, slotNumber 17, hostId 1 is set to MISSING_NVLINK
+[Jul 06 2026 15:43:33] [INFO] [tid 167] sent class port info request message to GPU with GUID 0xe002499e2b4c8781, port LID  0x8426.
+[Jul 06 2026 15:43:33] [INFO] [tid 167] discovered a GPU on nodeId 11, systemGuid 0x926d8135d73f6b0c, gpuGUID 0xe002499e2b4c8781, p
+ort LID 0x8426, state Discovered.
+
+Fabric manager continues seeing mismatch in the expected up links for almost all GPUs
+[Jul 06 2026 16:53:49] [WARNING] [tid 195] Inconsistent up links on probe request from GPU 0xd0828b90f9348724 in partition Id 32766; 0x3ffff, 0x3ffcf, 0x3ffff.
+[Jul 06 2026 16:53:50] [WARNING] [tid 195] Inconsistent up links on probe request from GPU 0x752a64788227460e in partition Id 32766; 0x3ffff, 0x3ffcf, 0x3ffff.
+[Jul 06 2026 16:53:53] [WARNING] [tid 195] Inconsistent up links on probe request from GPU 0x3cc75fb7c689988f in partition Id 32766; 0x3ffff, 0x3ffcf, 0x3ffff.
+[Jul 06 2026 16:53:53] [ERROR] [tid 195] Unexpected up links on probe request from GPU 0x3cc75fb7c689988f in partition Id 32766; received 0x3ffcf expected 0x3ffff.
+
+
+These logs mean FM got probe requests from those GPUs, but the set of NVLink links reported as up did not match the partition’s expected link set. The missing bits in expected 0x3ffff vs 0x3ffcf map to bits 4, 5 and that maps to switch tray 2.
+
+Most likely this was a problem with switch tray2 as almost all GPUs were reporting issues with link pair <4,5>. It would have been probably sufficient to reset switch tray 2.
+Some NVLinks went down (reason unknown), but the GPUs were still alive and responding.
+[Jul 06 2026 15:43:33] [INFO] [tid 167] Switch Health for chassisId 1, slotNumber 17, hostId 1, switchId 2 is set to MISSING_NVLINK
+[Jul 06 2026 15:43:33] [INFO] [tid 167] Switch Node  Health for chassisId 1, slotNumber 17, hostId 1 is set to MISSING_NVLINK
+
+GPUs were discoverd by the fabric manager, but some switch is still in unhealthy state.
+[Jul 06 2026 15:43:33] [INFO] [tid 167] Switch Node  Health for chassisId 1, slotNumber 17, hostId 1 is set to MISSING_NVLINK
+[Jul 06 2026 15:43:33] [INFO] [tid 167] sent class port info request message to GPU with GUID 0xe002499e2b4c8781, port LID  0x8426.
+[Jul 06 2026 15:43:33] [INFO] [tid 167] discovered a GPU on nodeId 11, systemGuid 0x926d8135d73f6b0c, gpuGUID 0xe002499e2b4c8781, p
+ort LID 0x8426, state Discovered.
+
+Fabric manager continues seeing mismatch in the expected up links for almost all GPUs
+[Jul 06 2026 16:53:49] [WARNING] [tid 195] Inconsistent up links on probe request from GPU 0xd0828b90f9348724 in partition Id 32766; 0x3ffff, 0x3ffcf, 0x3ffff.
+[Jul 06 2026 16:53:50] [WARNING] [tid 195] Inconsistent up links on probe request from GPU 0x752a64788227460e in partition Id 32766; 0x3ffff, 0x3ffcf, 0x3ffff.
+[Jul 06 2026 16:53:53] [WARNING] [tid 195] Inconsistent up links on probe request from GPU 0x3cc75fb7c689988f in partition Id 32766; 0x3ffff, 0x3ffcf, 0x3ffff.
+[Jul 06 2026 16:53:53] [ERROR] [tid 195] Unexpected up links on probe request from GPU 0x3cc75fb7c689988f in partition Id 32766; received 0x3ffcf expected 0x3ffff.
+
+
+These logs mean FM got probe requests from those GPUs, but the set of NVLink links reported as up did not match the partition’s expected link set. The missing bits in expected 0x3ffff vs 0x3ffcf map to bits 4, 5 and that maps to switch tray 2.
+
+Most likely this was a problem with switch tray2 as almost all GPUs were reporting issues with link pair <4,5>. It would have been probably sufficient to reset switch tray 2.
+
+

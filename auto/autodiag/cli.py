@@ -422,5 +422,24 @@ def demo(
     )
 
 
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", help="Bind address. Anything other than 127.0.0.1 exposes the UI to the network with no authentication."),
+    port: int = typer.Option(8765, help="Port."),
+    reload: bool = typer.Option(False, help="Auto-reload on code changes (development)."),
+):
+    """Start the web UI."""
+    try:
+        import uvicorn
+    except ImportError:
+        console.print("[red]The web UI needs extra packages:[/] pip install -e '.[web]'")
+        raise typer.Exit(2)
+    config.ensure_dirs()
+    if host not in ("127.0.0.1", "localhost"):
+        console.print(f"[yellow]Binding to {host}: the UI has no authentication. Anyone who can reach it can read the knowledge base and spend API credits.[/]")
+    console.print(f"autodiag web UI at [bold]http://{host}:{port}[/]  (API docs at /api/docs)")
+    uvicorn.run("autodiag.web.app:app", host=host, port=port, reload=reload, timeout_keep_alive=900, log_level="info")
+
+
 if __name__ == "__main__":
     app()
