@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+*.engine
+*.onnx
+*.pt
+data/video/
+data/events/
+data/models/*
+!data/models/.gitkeep
+yolo/lane.json
+yolo/*.snapshot.jpg
+.venv-mac/

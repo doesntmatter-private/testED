@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lane Guard Prototype</title>
+<style>
+:root{--bg:#15171b;--panel:#1f2228;--line:#33383f;--fg:#e8e9e6;--muted:#9aa0ab;--accent:#f3833a;--alarm:#d63b2f;--ok:#3aa36b;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-size:15px}
+header{display:flex;align-items:center;gap:16px;padding:10px 16px;border-bottom:2px solid var(--accent);background:var(--panel)}
+header h1{font-size:18px;margin:0;letter-spacing:.02em}
+.badge{padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;border:1px solid var(--line);color:var(--muted)}
+.badge.alarm{background:var(--alarm);color:#fff;border-color:var(--alarm);animation:blink .6s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+.stats{margin-left:auto;display:flex;gap:18px;font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted)}
+.stats b{color:var(--fg);font-weight:600}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.view{position:relative;background:#000;border:1px solid var(--line);border-radius:6px;overflow:hidden;min-height:240px}
+.view img,.view canvas{display:block;width:100%;height:auto}
+.view canvas{position:absolute;inset:0;height:100%;touch-action:none}
+.view.editing canvas{cursor:crosshair}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
+.panel h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+button{background:#2a2e36;color:var(--fg);border:1px solid var(--line);border-radius:5px;padding:7px 12px;font-size:14px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:#1a1a1a;border-color:var(--accent);font-weight:600}
+button.danger{border-color:var(--alarm);color:#ffb4ad}
+button:disabled{opacity:.45;cursor:default}
+label.f{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted);margin:6px 0}
+label.f input{width:90px;background:#15171b;color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-size:14px}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.45;margin:6px 0 0}
+#events{list-style:none;margin:0;padding:0;max-height:46vh;overflow:auto}
+#events li{border-bottom:1px solid var(--line);padding:8px 0;font-size:13.5px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}
+.k{font-weight:700;font-size:11px;letter-spacing:.06em;padding:2px 6px;border-radius:3px}
+.k.alarm{background:var(--alarm);color:#fff}.k.near_miss{background:#5a4a1e;color:#ffd98a}.k.test{background:#2f4f6b;color:#bfe0ff}
+#events a{color:var(--accent);text-decoration:none}
+#player{width:100%;margin-top:8px;border-radius:4px;background:#000;display:none}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--muted);word-break:break-all}
+.site{font-size:13.5px;line-height:1.5}
+.site b{color:var(--accent)}
+.site .st{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:3px;background:#2a2e36;color:var(--muted)}
+.site .st.active{background:var(--ok);color:#fff}.site .st.planned{background:#2f4f6b;color:#bfe0ff}.site .st.picked_up{background:#444}.site .st.cancelled{background:var(--alarm);color:#fff}
+.picker{display:none}
+.picker select,.picker input[type=text]{background:#15171b;color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:6px 8px;font-size:14px}
+.picker input[type=text]{flex:1;min-width:120px}
+#results{list-style:none;margin:8px 0 0;padding:0;max-height:36vh;overflow:auto;border-top:1px solid var(--line)}
+#results li{padding:8px 6px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px;line-height:1.4}
+#results li:hover{background:#2a2e36}
+#results li.sel{outline:2px solid var(--accent);background:#2a2e36}
+#results .r1{display:flex;justify-content:space-between;gap:8px}
+#results .r1 b{color:var(--fg)}
+#results .r2{color:var(--muted)}
+textarea{width:100%;background:#15171b;color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:6px 8px;font-size:13.5px;font-family:inherit;resize:vertical}
+</style>
+</head>
+<body>
+<header>
+  <h1>LANE GUARD <span style="font-weight:400;color:var(--muted)">Prototype</span></h1>
+  <span id="status" class="badge">connecting</span>
+  <div class="stats">
+    <span><b id="fps">–</b> fps</span><span><b id="infer">–</b> ms infer</span><span><b id="tracks">–</b> tracks</span><span><b id="frame">–</b> frames</span>
+  </div>
+</header>
+<main>
+  <section>
+    <div id="view" class="view">
+      <img id="live" src="/stream.mjpg" alt="live view">
+      <canvas id="ov"></canvas>
+    </div>
+    <p class="hint" id="viewhint">Live view with detections, yellow anchor dots and the red closed lane polygon. Click <b>Edit lane</b> to redraw it on a frozen frame.</p>
+  </section>
+  <aside>
+    <div class="panel">
+      <h2>Lane polygon</h2>
+      <div class="row" id="editRow">
+        <button id="edit">Edit lane</button>
+        <button id="testAlarm" class="danger">Test alarm</button>
+      </div>
+      <div id="editor" style="display:none">
+        <div class="row">
+          <button id="modePoly" class="primary">Lane corners</button>
+          <button id="modeDir">Crew direction</button>
+        </div>
+        <div class="row">
+          <button id="undo">Undo</button><button id="clear">Clear</button>
+          <button id="save" class="primary">Save &amp; apply</button><button id="cancel">Cancel</button>
+        </div>
+        <label class="f">Confirm frames <input id="confirm" type="number" min="1" max="30" step="1"></label>
+        <label class="f">Min speed px/frame <input id="minspeed" type="number" min="0" step="0.5"></label>
+        <label class="f">Cooldown s <input id="cooldown" type="number" min="0" step="0.5"></label>
+        <p class="hint">Tap the corners of the closed lane on the road surface, in order, 3 or more. Switch to <b>Crew direction</b> and tap twice: lane entry, then toward the crew. Save applies immediately to the running pipeline.</p>
+      </div>
+      <p class="hint" id="laneinfo"></p>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <h2>Caltrans closure</h2>
+      <div id="siteView" class="site">No closure linked.</div>
+      <div class="row" style="margin-top:8px" id="siteRow">
+        <button id="linkBtn">Link closure</button>
+        <button id="unlinkBtn">Unlink</button>
+      </div>
+      <div id="picker" class="picker">
+        <div class="row">
+          <select id="district"></select>
+          <input id="q" type="text" placeholder="route, place, work type, closure ID">
+        </div>
+        <div class="row">
+          <select id="statusSel"><option value="active">Active (10-97)</option><option value="planned">Planned</option><option value="">Any status</option></select>
+          <label class="f" style="margin:0"><input id="laneOnly" type="checkbox" checked style="width:auto"> lane closures only</label>
+          <button id="nearBtn" title="Use this device's location">Near me</button>
+          <button id="searchBtn" class="primary">Search</button>
+        </div>
+        <div class="hint" id="pickHint"></div>
+        <ul id="results"></ul>
+        <label class="f">Crew / contractor <input id="crew" type="text" style="width:60%"></label>
+        <label class="f">Operator <input id="operator" type="text" style="width:60%"></label>
+        <textarea id="notes" rows="2" placeholder="notes, e.g. camera on attenuator truck, taper at PM 21.3"></textarea>
+        <div class="row" style="margin-top:8px">
+          <button id="siteSave" class="primary">Save</button><button id="siteCancel">Cancel</button>
+        </div>
+        <p class="hint">Data from the Caltrans Lane Closure System, refreshed every 5 minutes. Active means the crew has reported 10-97, closure set up. The chosen record is written into every event file.</p>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <h2>Events</h2>
+      <ul id="events"></ul>
+      <video id="player" controls></video>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <h2>Source</h2>
+      <div class="mono" id="src"></div>
+    </div>
+  </aside>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const view=$('view'),live=$('live'),ov=$('ov'),ctx=ov.getContext('2d');
+let state=null,editing=false,mode='poly',poly=[],dir=[],frameW=0,frameH=0,frozen=null;
+
+function fit(){const r=live.getBoundingClientRect();ov.width=r.width*devicePixelRatio;ov.height=r.height*devicePixelRatio;ov.style.height=r.height+'px';draw();}
+new ResizeObserver(fit).observe(live);live.addEventListener('load',fit);
+
+function toCanvas(p){const sx=ov.width/frameW,sy=ov.height/frameH;return [p[0]*sx,p[1]*sy];}
+function toFrame(ev){const r=ov.getBoundingClientRect();const x=(ev.clientX-r.left)/r.width*frameW,y=(ev.clientY-r.top)/r.height*frameH;return [Math.round(x),Math.round(y)];}
+
+function draw(){
+  ctx.clearRect(0,0,ov.width,ov.height);
+  if(!frameW||!editing)return;           // live stream already has the overlay drawn server side
+  const lw=Math.max(3,ov.width/320);
+  if(poly.length){ctx.strokeStyle='#ff1f1f';ctx.fillStyle='rgba(255,31,31,.15)';ctx.lineWidth=lw;ctx.beginPath();
+    poly.forEach((p,i)=>{const [x,y]=toCanvas(p);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});if(poly.length>2){ctx.closePath();ctx.fill()}ctx.stroke();
+    poly.forEach((p,i)=>{const [x,y]=toCanvas(p);ctx.fillStyle='#ff1f1f';ctx.beginPath();ctx.arc(x,y,lw*2.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.font=`${lw*6}px system-ui`;ctx.fillText(i+1,x+lw*3,y-lw*3)});}
+  if(dir.length){ctx.strokeStyle='#ffe34d';ctx.fillStyle='#ffe34d';ctx.lineWidth=lw*1.5;const [x0,y0]=toCanvas(dir[0]);ctx.beginPath();ctx.arc(x0,y0,lw*3,0,7);ctx.fill();
+    if(dir.length>1){const [x1,y1]=toCanvas(dir[1]);ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();const a=Math.atan2(y1-y0,x1-x0),h=lw*8;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1-h*Math.cos(a-.5),y1-h*Math.sin(a-.5));ctx.lineTo(x1-h*Math.cos(a+.5),y1-h*Math.sin(a+.5));ctx.closePath();ctx.fill();}}
+}
+
+ov.addEventListener('pointerdown',ev=>{if(!editing)return;ev.preventDefault();const p=toFrame(ev);
+  if(mode==='poly')poly.push(p);else{if(dir.length>=2)dir=[];dir.push(p);}draw();});
+
+function setMode(m){mode=m;$('modePoly').className=m==='poly'?'primary':'';$('modeDir').className=m==='dir'?'primary':'';}
+$('modePoly').onclick=()=>setMode('poly');$('modeDir').onclick=()=>setMode('dir');
+$('undo').onclick=()=>{if(mode==='poly')poly.pop();else dir.pop();draw();};
+$('clear').onclick=()=>{poly=[];dir=[];draw();};
+
+$('edit').onclick=async()=>{
+  // freeze on a raw frame so the operator draws on a still image
+  frozen=`/snapshot.jpg?t=${Date.now()}`;live.src=frozen;editing=true;view.classList.add('editing');
+  $('editor').style.display='';$('editRow').style.display='none';
+  const lane=state?.lane||{};poly=(lane.polygon||[]).map(p=>[...p]);
+  if(lane.crew_direction&&poly.length){const c=poly.reduce((a,p)=>[a[0]+p[0]/poly.length,a[1]+p[1]/poly.length],[0,0]);const d=lane.crew_direction,n=Math.hypot(d[0],d[1])||1,L=Math.min(frameW,frameH)*0.2;dir=[c.map(Math.round),[Math.round(c[0]+d[0]/n*L),Math.round(c[1]+d[1]/n*L)]];}else dir=[];
+  $('confirm').value=lane.confirm_frames??4;$('minspeed').value=lane.heading_min_speed_px??2;$('cooldown').value=lane.cooldown_s??8;
+  $('viewhint').innerHTML='<b>Editing on a frozen frame.</b> Tap lane corners in order on the road surface. Then set the crew direction with two taps.';
+  setMode('poly');draw();
+};
+function stopEdit(){editing=false;view.classList.remove('editing');live.src='/stream.mjpg';$('editor').style.display='none';$('editRow').style.display='';$('viewhint').innerHTML='Live view with detections, yellow anchor dots and the red closed lane polygon. Click <b>Edit lane</b> to redraw it on a frozen frame.';draw();}
+$('cancel').onclick=stopEdit;
+$('save').onclick=async()=>{
+  if(poly.length<3||dir.length!==2){alert('Need 3+ lane corners and a 2 point crew direction.');return;}
+  const body={polygon:poly,crew_direction:[dir[1][0]-dir[0][0],dir[1][1]-dir[0][1]],confirm_frames:+$('confirm').value,heading_min_speed_px:+$('minspeed').value,cooldown_s:+$('cooldown').value};
+  const r=await fetch('/api/lane',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){alert('Save failed: '+await r.text());return;}
+  stopEdit();poll();
+};
+$('testAlarm').onclick=()=>fetch('/api/test_alarm',{method:'POST'});
+
+$('events').onclick=ev=>{const a=ev.target.closest('a[data-clip]');if(!a)return;ev.preventDefault();const v=$('player');v.src='/events/'+a.dataset.clip;v.style.display='block';v.play();};
+
+async function poll(){
+  try{const r=await fetch('/api/state');state=await r.json();}catch(e){$('status').textContent='offline';$('status').className='badge';return;}
+  [frameW,frameH]=state.frame_size||[0,0];
+  $('fps').textContent=state.fps;$('infer').textContent=state.infer_ms;$('tracks').textContent=state.tracks;$('frame').textContent=state.frame_no;
+  const s=$('status');if(state.alarm_active){s.textContent='ALARM';s.className='badge alarm';}else if(state.frame_no>0){s.textContent='armed';s.className='badge';s.style.color='var(--ok)';}else{s.textContent='no frames';s.className='badge';}
+  const L=state.lane||{};$('laneinfo').textContent=L.polygon?`${L.polygon.length} corners · confirm ${L.confirm_frames} frames · min speed ${L.heading_min_speed_px} px/f · cooldown ${L.cooldown_s} s${L.saved_at?' · saved '+L.saved_at:''}`:'No lane defined yet.';
+  $('siteView').innerHTML=fmtSite(state.site);
+  $('src').textContent=`${state.source}\n${state.model}\n${state.frame_size.join('×')} · up ${Math.round(state.uptime_s)} s`;
+  $('events').innerHTML=(state.events||[]).map(e=>`<li><span class="k ${e.kind}">${e.kind.replace('_',' ')}</span><span>track ${e.track_id} · ${e.wall_time} · ${(e.speed_px_per_frame??0).toFixed(1)} px/f</span>${e.clip?`<a href="#" data-clip="${e.clip}">clip</a>`:'<span></span>'}</li>`).join('')||'<li style="color:var(--muted)">No events yet.</li>';
+}
+// ---- Caltrans LCS site metadata ----
+let selected=null,myPos=null;
+function fmtSite(site){
+  const L=site?.lcs;if(!L||!L.index)return 'No closure linked.';
+  return `<span class="st ${L.status||''}">${(L.status||'').replace('_',' ')}</span> <b>${L.route||''}</b> ${L.direction||''} · PM ${L.beginPostmile||'?'}${L.endPostmile&&L.endPostmile!==L.beginPostmile?' to '+L.endPostmile:''}<br>
+  ${L.typeOfWork||''} · ${L.typeOfClosure||''} · lanes ${L.lanesClosed||'?'} of ${L.totalExistingLanes||'?'} · ${L.facility||''}<br>
+  <span class="mono">${L.index||''}</span><br>${L.beginLocation||''}${L.nearbyPlace?', '+L.nearbyPlace:''}<br>
+  ${L.start||''} → ${L.end||''}${site.crew?'<br>Crew: '+site.crew:''}${site.operator?' · Operator: '+site.operator:''}${site.notes?'<br>'+site.notes:''}`;
+}
+async function loadDistricts(){const r=await fetch('/api/lcs/districts');const d=await r.json();$('district').innerHTML=Object.entries(d).map(([k,v])=>`<option value="${k}" ${k==='4'?'selected':''}>D${k} ${v}</option>`).join('');}
+$('linkBtn').onclick=async()=>{$('picker').style.display='block';$('siteRow').style.display='none';if(!$('district').options.length)await loadDistricts();
+  const site=state?.site||{};$('crew').value=site.crew||'';$('operator').value=site.operator||'';$('notes').value=site.notes||'';
+  if(site.lcs?.district)$('district').value=site.lcs.district;selected=site.lcs||null;doSearch();};
+$('siteCancel').onclick=()=>{$('picker').style.display='none';$('siteRow').style.display='';};
+$('unlinkBtn').onclick=async()=>{await fetch('/api/site',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lcs:null})});poll();};
+$('nearBtn').onclick=()=>{if(!navigator.geolocation){alert('No geolocation on this device.');return;}$('pickHint').textContent='Locating…';
+  navigator.geolocation.getCurrentPosition(p=>{myPos=[p.coords.latitude,p.coords.longitude];$('pickHint').textContent=`Within 5 mi of ${myPos[0].toFixed(4)}, ${myPos[1].toFixed(4)}`;doSearch();},e=>{$('pickHint').textContent='Location unavailable: '+e.message;});};
+$('searchBtn').onclick=doSearch;$('q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+async function doSearch(){
+  const p=new URLSearchParams({district:$('district').value,q:$('q').value,status:$('statusSel').value,lane_only:$('laneOnly').checked,limit:80});
+  if(myPos){p.set('lat',myPos[0]);p.set('lon',myPos[1]);p.set('radius_mi',5);}
+  $('results').innerHTML='<li style="color:var(--muted)">Loading…</li>';
+  const r=await fetch('/api/lcs/closures?'+p);if(!r.ok){$('results').innerHTML=`<li style="color:#ffb4ad">${await r.text()}</li>`;return;}
+  const d=await r.json();$('pickHint').textContent=`${d.results.length} shown of ${d.total} closures in district ${d.district}${myPos?' · nearest first':''}`;
+  $('results').innerHTML=d.results.map((c,i)=>`<li data-i="${i}" class="${selected&&selected.index===c.index?'sel':''}">
+    <div class="r1"><span><b>${c.route}</b> ${c.direction} · PM ${c.beginPostmile}</span><span>${c.distance_mi!=null?c.distance_mi+' mi':''} <span class="site"><span class="st ${c.status}">${c.status.replace('_',' ')}</span></span></span></div>
+    <div class="r2">${c.typeOfWork} · ${c.typeOfClosure} · lanes ${c.lanesClosed} · ${c.beginLocation}${c.nearbyPlace?', '+c.nearbyPlace:''}<br>${c.closureID}-${c.logNumber} · ${c.start} → ${c.end}</div></li>`).join('')||'<li style="color:var(--muted)">No matches.</li>';
+  $('results').querySelectorAll('li[data-i]').forEach(li=>li.onclick=()=>{selected=d.results[+li.dataset.i];$('results').querySelectorAll('li').forEach(x=>x.classList.remove('sel'));li.classList.add('sel');});
+}
+$('siteSave').onclick=async()=>{
+  const body={crew:$('crew').value,operator:$('operator').value,notes:$('notes').value};if(selected)body.lcs=selected;if(myPos){body.camera_lat=myPos[0];body.camera_lon=myPos[1];}
+  const r=await fetch('/api/site',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){alert('Save failed: '+await r.text());return;}$('siteCancel').onclick();poll();
+};
+
+poll();setInterval(poll,1000);
+</script>
+</body>
+</html>

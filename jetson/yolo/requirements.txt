@@ -1,0 +1,7 @@
+# Install torch first with the index for your platform, see docs/dev-setup.md.
+ultralytics>=8.3
+opencv-python>=4.9 ; platform_machine != "aarch64"
+numpy
+lap
+fastapi>=0.110
+uvicorn>=0.29

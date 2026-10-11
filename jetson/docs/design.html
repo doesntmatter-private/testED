@@ -1,0 +1,465 @@
+<title>Work Zone Lane Guard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Archivo:wght@600;700&display=swap">
+<style>
+/* Layout: single reading column with a sticky left TOC on wide screens; safety-orange accent on cool graphite neutrals */
+:root{
+  --bg:#f6f6f4; --surface:#ffffff; --fg:#1d2026; --muted:#5d6370; --line:#d9dbd6;
+  --accent:#e0661a; --accent-ink:#ffffff; --tint:#fbeee4;
+  --good:#2f7d4f; --warn:#b7791f; --bad:#b4332a;
+  --display:"Archivo",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16181c; --surface:#1f2228; --fg:#e8e9e6; --muted:#a0a6b1; --line:#333842;
+  --accent:#f3833a; --accent-ink:#1a1a1a; --tint:#2d2420; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16181c; --surface:#1f2228; --fg:#e8e9e6; --muted:#a0a6b1; --line:#333842;
+  --accent:#f3833a; --accent-ink:#1a1a1a; --tint:#2d2420; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
+@media (max-width:860px){.wrap{grid-template-columns:minmax(0,1fr)}nav.toc{display:none}}
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;padding-top:40px;font-size:13.5px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:4px 0 4px 12px;border-left:2px solid var(--line)}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--fg);border-color:var(--accent);outline:none}
+main{min-width:0;padding-top:40px}
+header.hd{border-bottom:3px solid var(--accent);padding-bottom:20px;margin-bottom:36px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-size:clamp(30px,5vw,44px);line-height:1.05;margin:8px 0 12px;text-wrap:balance}
+h2{font-family:var(--display);font-size:24px;margin:48px 0 14px;text-wrap:balance;scroll-margin-top:16px}
+h3{font-family:var(--display);font-size:17px;margin:28px 0 8px}
+p,li{max-width:68ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:13.5px;color:var(--muted);font-family:var(--mono)}
+.lede{font-size:18px;color:var(--muted);max-width:62ch}
+table{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums}
+.tbl{overflow-x:auto;margin:14px 0 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:13px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:none}
+td.n{text-align:right;white-space:nowrap}
+code{font-family:var(--mono);font-size:.92em;background:var(--tint);padding:1px 5px;border-radius:3px}
+pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;margin:14px 0}
+pre code{background:none;padding:0}
+.callout{border-left:4px solid var(--accent);background:var(--tint);padding:12px 16px;border-radius:0 6px 6px 0;margin:18px 0;max-width:72ch}
+.callout strong{color:var(--accent)}
+.pick{display:inline-block;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);padding:2px 7px;border-radius:3px;vertical-align:middle;margin-left:6px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;border:1px solid}
+.g{color:var(--good);border-color:var(--good)} .w{color:var(--warn);border-color:var(--warn)} .b{color:var(--bad);border-color:var(--bad)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:16px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px;min-width:0}
+.card h3{margin-top:0}
+.mermaid{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px;overflow-x:auto;margin:14px 0}
+small.src{color:var(--muted);font-size:13px}
+ol,ul{padding-left:22px}
+li+li{margin-top:4px}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <a href="#goals">1 Goals</a>
+  <a href="#reqs">2 Requirements</a>
+  <a href="#arch">3 System overview</a>
+  <a href="#timing">4 Timing budget</a>
+  <a href="#hw">5 Hardware</a>
+  <a href="#cam">6 Camera</a>
+  <a href="#swa">7 Option A DeepStream</a>
+  <a href="#swb">8 Option B YOLO11n</a>
+  <a href="#cmp">9 Comparison</a>
+  <a href="#logic">10 Intrusion logic</a>
+  <a href="#alert">11 Alerting</a>
+  <a href="#deploy">12 Deployment</a>
+  <a href="#risks">13 Risks</a>
+  <a href="#plan">14 Plan</a>
+</nav>
+
+<main>
+<header class="hd">
+  <div class="eyebrow">Design document · Draft 1</div>
+  <h1>Work Zone Lane Guard</h1>
+  <p class="lede">Edge vision system on NVIDIA Jetson that detects vehicles entering a lane closed by a road crew and raises an alarm before they reach the workers.</p>
+  <div class="meta"><span>Author: Roopesh Tamma</span><span>Date: 2026-10-08</span><span>Status: proposal</span></div>
+</header>
+
+<h2 id="goals">1. Goals and non-goals</h2>
+<p>A single camera looks upstream from the taper of a lane closure. A Jetson detects and tracks every vehicle, decides whether a track has entered the closed lane and is heading toward the crew, and triggers a local alarm with no dependence on network connectivity.</p>
+<div class="two">
+  <div class="card"><h3>Goals</h3><ul>
+    <li>Warn the crew at least 3 seconds before an intruding vehicle reaches the first worker.</li>
+    <li>Run fully offline on the Jetson. Cloud or LTE is optional for logging.</li>
+    <li>Operate day and night, in rain, and with headlights pointed at the camera.</li>
+    <li>Fewer than one false alarm per hour of normal traffic.</li>
+    <li>Set up by a crew member in under 10 minutes with a tablet.</li>
+  </ul></div>
+  <div class="card"><h3>Non-goals for v1</h3><ul>
+    <li>License plate capture or enforcement.</li>
+    <li>Multi-camera fusion across the full closure length.</li>
+    <li>Radar fusion. Kept as an upgrade path, see Risks.</li>
+    <li>Pedestrian or worker tracking.</li>
+  </ul></div>
+</div>
+
+<h2 id="reqs">2. Requirements</h2>
+<div class="tbl"><table>
+<tr><th>ID</th><th>Requirement</th><th>Target</th></tr>
+<tr><td>R1</td><td>Detection range for a passenger car</td><td class="n">≥ 400 ft from camera</td></tr>
+<tr><td>R2</td><td>End to end latency, photons to alarm output</td><td class="n">≤ 500 ms</td></tr>
+<tr><td>R3</td><td>Inference frame rate per camera</td><td class="n">≥ 30 fps</td></tr>
+<tr><td>R4</td><td>Camera to Jetson cable run</td><td class="n">25 ft, up to 300 ft</td></tr>
+<tr><td>R5</td><td>Operating temperature</td><td class="n">-20 °C to 55 °C</td></tr>
+<tr><td>R6</td><td>Power draw of compute unit</td><td class="n">≤ 25 W</td></tr>
+<tr><td>R7</td><td>Event evidence</td><td>10 s clip, track, timestamp, speed estimate</td></tr>
+<tr><td>R8</td><td>False alarm rate</td><td class="n">&lt; 1 per hour</td></tr>
+</table></div>
+
+<h2 id="arch">3. System overview</h2>
+<p>The same hardware supports both software options. Only the box labeled Vision pipeline changes between Option A and Option B.</p>
+<pre class="mermaid">
+flowchart LR
+  CAM[PoE IP camera<br/>1080p30 H.264 RTSP] -->|Cat6, PoE| SW[PoE switch<br/>or injector]
+  SW -->|Ethernet| J[Jetson Orin Nano Super]
+  subgraph J[Jetson Orin Nano Super]
+    DEC[HW decode] --> DET[Vehicle detector<br/>TensorRT FP16] --> TRK[Multi object tracker] --> ROI[Lane polygon +<br/>heading check] --> EVT[Event manager]
+  end
+  EVT -->|GPIO relay| STR[Strobe + horn]
+  EVT -->|LoRa / 900 MHz| WEAR[Worker wearables]
+  EVT -->|LTE, optional| CLOUD[Event log + clips]
+  TAB[Setup tablet<br/>Wi-Fi] -.->|draw polygon| ROI
+</pre>
+
+<h2 id="timing">4. Timing budget</h2>
+<p>Latency drives everything else. A vehicle at highway speed covers a lot of road while the pipeline is thinking, so the camera must look far upstream and the pipeline must stay well under half a second.</p>
+<div class="tbl"><table>
+<tr><th>Speed</th><th>Distance per second</th><th>Distance per 500 ms</th><th>Distance in 3 s warning</th></tr>
+<tr><td>35 mph</td><td class="n">51 ft</td><td class="n">26 ft</td><td class="n">154 ft</td></tr>
+<tr><td>55 mph</td><td class="n">81 ft</td><td class="n">40 ft</td><td class="n">242 ft</td></tr>
+<tr><td>70 mph</td><td class="n">103 ft</td><td class="n">51 ft</td><td class="n">308 ft</td></tr>
+</table></div>
+<div class="tbl"><table>
+<tr><th>Stage</th><th>Typical</th><th>Notes</th></tr>
+<tr><td>Camera exposure + encode</td><td class="n">60 to 120 ms</td><td>Set GOP short, disable smart codec buffering</td></tr>
+<tr><td>Network + RTSP jitter buffer</td><td class="n">20 to 80 ms</td><td>Use <code>latency=0</code> on rtspsrc, UDP where possible</td></tr>
+<tr><td>Decode</td><td class="n">5 to 15 ms</td><td>NVDEC in both options</td></tr>
+<tr><td>Inference</td><td class="n">5 to 12 ms</td><td>YOLO11n or TrafficCamNet at 640 px, FP16</td></tr>
+<tr><td>Tracker + ROI logic</td><td class="n">2 to 5 ms</td><td></td></tr>
+<tr><td>Confirmation window</td><td class="n">100 to 170 ms</td><td>3 to 5 consecutive frames inside polygon</td></tr>
+<tr><td>GPIO + strobe</td><td class="n">10 to 30 ms</td><td>Relay coil pull in time dominates</td></tr>
+<tr><td><strong>Total</strong></td><td class="n"><strong>200 to 430 ms</strong></td><td>Within R2 with margin</td></tr>
+</table></div>
+<div class="callout"><strong>Placement rule.</strong> At 55 mph with a 3 second warning plus 0.5 second pipeline latency, the polygon entry line must sit at least 285 ft upstream of the first worker. The camera therefore needs a lens that renders a car at 300 to 400 ft as at least 24 px wide. See the lens table in section 6.</div>
+
+<h2 id="hw">5. Compute hardware</h2>
+<h3>Why an edge GPU, and why Jetson</h3>
+<p>The YOLO model itself runs anywhere. Jetson answers a different question: what is the cheapest box that runs YOLO at 30 fps on a 1080p stream, in real time, on battery, in a roadside enclosure, with no network.</p>
+<p>The work zone box has to decode a 1080p30 stream, run a detector on every frame, respond in under half a second, draw under 25 W from a truck battery, survive heat and vibration, and keep working with the network down. Cloud inference adds 200 to 500 ms of round trip latency plus a hard dependency on LTE coverage, which rules it out for the alarm path.</p>
+<div class="tbl"><table>
+<tr><th>Platform</th><th>YOLO11n 1080p fps</th><th>Power</th><th>Rough cost</th><th>Verdict</th></tr>
+<tr><td>Raspberry Pi 5, CPU only</td><td class="n">2 to 4</td><td class="n">8 W</td><td class="n">$80</td><td>Too slow. A car at 55 mph moves 40 ft between frames.</td></tr>
+<tr><td>Pi 5 + Hailo-8L AI HAT</td><td class="n">25 to 40</td><td class="n">12 W</td><td class="n">$150</td><td>Workable for one camera. Weaker tooling, no hardware video decode, int8 only.</td></tr>
+<tr><td>Intel N100 mini PC, OpenVINO</td><td class="n">15 to 25</td><td class="n">15 to 25 W</td><td class="n">$180</td><td>Borderline. Decent for one camera at reduced resolution.</td></tr>
+<tr><td>Google Coral USB</td><td class="n">20 to 30</td><td class="n">10 W</td><td class="n">$140</td><td>Int8 only, tiny on-chip memory, product line largely abandoned.</td></tr>
+<tr><td>Jetson Orin Nano Super <span class="pick">Pick</span></td><td class="n">90+</td><td class="n">7 to 25 W</td><td class="n">$249</td><td>Headroom for two cameras, a tracker, and recording. Hardware decode and encode on chip.</td></tr>
+<tr><td>Laptop with RTX GPU</td><td class="n">200+</td><td class="n">60 to 150 W</td><td class="n">$1,500</td><td>Fine for the bench. Wrong power and form factor for the road.</td></tr>
+<tr><td>Cloud GPU</td><td class="n">Unlimited</td><td class="n">Remote</td><td class="n">Per hour</td><td>Latency and connectivity make it unsafe for a real time alarm. Fine for training and offline analytics.</td></tr>
+</table></div>
+<p>Jetson wins on four points:</p>
+<ul>
+  <li>It is the only option with a real GPU, hardware video decode, hardware encode for evidence clips, and a full CUDA stack in one low power module.</li>
+  <li>TensorRT turns YOLO11n into a 5 to 12 ms per frame engine. That headroom is what allows multi frame confirmation while still beating the latency budget.</li>
+  <li>The same code and model run on an RTX laptop during development and on the Jetson in the field with no changes.</li>
+  <li>Rugged industrial carriers exist off the shelf, which is not true for most of the alternatives.</li>
+</ul>
+<p>When Jetson would not be needed: offline review of recorded video can run on a laptop or in the cloud; a single camera that only needs to detect at the taper rather than 400 ft out could use a Pi 5 with a Hailo accelerator at the cost of warning time; and if a radar unit does primary detection with the camera only for evidence, almost no compute is required.</p>
+<h3>Jetson module</h3>
+<div class="tbl"><table>
+<tr><th>Module</th><th>AI perf</th><th>Memory</th><th>Power</th><th>Dev kit price</th><th>Fit</th></tr>
+<tr><td>Jetson Orin Nano Super 8GB <span class="pick">Pick</span></td><td class="n">67 TOPS</td><td class="n">8 GB</td><td class="n">7 to 25 W</td><td class="n">$249</td><td>1 to 2 cameras at 1080p30 with a nano class model. Meets R6.</td></tr>
+<tr><td>Jetson Orin NX 16GB</td><td class="n">157 TOPS</td><td class="n">16 GB</td><td class="n">10 to 40 W</td><td class="n">~$700 w/ carrier</td><td>4+ cameras, or thermal + visible fusion, or a medium model.</td></tr>
+<tr><td>Jetson AGX Orin 64GB</td><td class="n">275 TOPS</td><td class="n">64 GB</td><td class="n">15 to 60 W</td><td class="n">$1,999</td><td>Overkill for this. Only for a full closure with 8 cameras.</td></tr>
+</table></div>
+<p>Software baseline is JetPack 6.2 with CUDA 12.6, TensorRT 10, and DeepStream 7.1. Both options build on the same image so the hardware decision is independent of the software decision.</p>
+<h3>Carrier and enclosure</h3>
+<ul>
+  <li><strong>Development:</strong> Orin Nano Super developer kit as is.</li>
+  <li><strong>Field units:</strong> an industrial carrier with wide input DC, such as Seeed reComputer Industrial J3011 or Advantech MIC-711. Both are fanless, rated to 60 °C, and take 9 to 36 V so they run from a truck battery or an arrow board power bus.</li>
+  <li>IP65 enclosure with a vented, heated compartment if units deploy below -10 °C. Passive heatsink is enough at 15 W.</li>
+  <li>256 GB NVMe for a rolling 72 hour video buffer and event clips.</li>
+</ul>
+<h3>Network and power</h3>
+<ul>
+  <li>Single port 802.3af PoE injector or a 4 port PoE switch such as a Netgear GS305P, powered from the same 12 V bus through a DC to DC converter.</li>
+  <li>Outdoor rated shielded Cat6, IP67 RJ45 coupler at the camera for quick disconnect, drip loop at both ends.</li>
+  <li>Total system draw is roughly 15 W Jetson plus 8 W camera plus 3 W switch, about 26 W. A 100 Ah 12 V LiFePO4 battery runs a 10 hour shift with large margin.</li>
+</ul>
+<h3>Alert outputs</h3>
+<ul>
+  <li>4 channel opto isolated relay HAT on the Jetson 40 pin header. Drives a 12 V LED strobe and a 110 dB horn directly.</li>
+  <li>LoRa or 900 MHz transceiver on USB for wearable vibration alarms. Latency under 100 ms, range over 1,000 ft.</li>
+  <li>Optional LTE modem over USB for event upload and remote health checks.</li>
+</ul>
+
+<h2 id="cam">6. Camera</h2>
+<p>The 25 ft run from camera to Jetson rules out CSI ribbon cameras and makes USB marginal. A PoE IP camera is the right choice: one cable for power and data, 300 ft reach, weatherproof connectors, and swappable without touching the compute box.</p>
+<h3>Required specifications</h3>
+<div class="tbl"><table>
+<tr><th>Attribute</th><th>Requirement</th><th>Why</th></tr>
+<tr><td>Form factor</td><td>Fixed bullet, IP66 or IP67, IK10</td><td>Sun shield, easy to aim down the road, survives debris</td></tr>
+<tr><td>Resolution and rate</td><td>1920×1080 at 30 fps</td><td>Enough pixels at 640 px inference. 4K slows decode with no detection gain</td></tr>
+<tr><td>Sensor</td><td>1/1.8 inch or larger, starlight class</td><td>Night work with low ambient light</td></tr>
+<tr><td>Dynamic range</td><td>True WDR, 120 dB or better</td><td>Headlights pointed at the lens</td></tr>
+<tr><td>Shutter</td><td>Manual cap at 1/500 s or faster</td><td>Prevents motion blur on cars at 70 mph</td></tr>
+<tr><td>Lens</td><td>Motorized varifocal 2.8 to 12 mm, or fixed 6 to 8 mm</td><td>Tune field of view to the taper length on site</td></tr>
+<tr><td>Streaming</td><td>RTSP, H.264 and H.265, configurable GOP, ONVIF Profile S</td><td>Works with both pipelines, no vendor lock in</td></tr>
+<tr><td>IR</td><td>Built in IR illuminator, 150 ft or more</td><td>Fallback when no street lighting exists</td></tr>
+<tr><td>Power</td><td>802.3af PoE, under 13 W including IR and heater</td><td>Single cable, fits battery budget</td></tr>
+<tr><td>Environmental</td><td>-30 °C to 60 °C</td><td>Matches R5 with margin</td></tr>
+</table></div>
+<h3>Lens choice versus detection distance</h3>
+<p>Horizontal field of view and the pixel width of a 6 ft wide car on a 1/1.8 inch sensor at 1080p. The detector needs about 24 px to be reliable.</p>
+<div class="tbl"><table>
+<tr><th>Focal length</th><th>Horizontal FOV</th><th>Car width at 200 ft</th><th>Car width at 300 ft</th><th>Car width at 400 ft</th></tr>
+<tr><td>2.8 mm</td><td class="n">~105°</td><td class="n">14 px</td><td class="n">9 px</td><td class="n">7 px</td></tr>
+<tr><td>6 mm</td><td class="n">~55°</td><td class="n">33 px</td><td class="n">22 px</td><td class="n">17 px</td></tr>
+<tr><td>8 mm <span class="pick">Pick</span></td><td class="n">~42°</td><td class="n">45 px</td><td class="n">30 px</td><td class="n">22 px</td></tr>
+<tr><td>12 mm</td><td class="n">~29°</td><td class="n">68 px</td><td class="n">45 px</td><td class="n">34 px</td></tr>
+</table></div>
+<p>A varifocal set near 8 mm gives detection out to roughly 400 ft while still seeing both lanes at the taper. Go to 12 mm on long straight highway closures where the camera can be aimed down a single approach.</p>
+<h3>Candidate cameras</h3>
+<div class="tbl"><table>
+<tr><th>Model</th><th>Sensor</th><th>Lens</th><th>Notes</th></tr>
+<tr><td>Axis P1465-LE</td><td>1/1.8 in, 2 MP</td><td>3 to 9 mm varifocal</td><td>Lightfinder 2.0 and Forensic WDR. Low latency Zipstream can be disabled. NDAA compliant. Premium price.</td></tr>
+<tr><td>Hanwha XNO-6085R <span class="pick">Pick</span></td><td>1/1.8 in, 2 MP</td><td>4.1 to 16.4 mm motorized</td><td>Good night performance, strong WDR, 1/12000 s shutter. NDAA compliant. Mid price.</td></tr>
+<tr><td>Bosch DINION 5100i IR</td><td>1/2.8 in, 2 MP</td><td>3.2 to 10.5 mm</td><td>Reliable firmware, slightly smaller sensor. NDAA compliant.</td></tr>
+<tr><td>Dahua or Hikvision 2 MP starlight bullet</td><td>1/1.8 in</td><td>2.7 to 13.5 mm</td><td>Cheapest and performs well. Restricted under NDAA Section 889, so not usable on federally funded DOT work.</td></tr>
+</table></div>
+<h3>Alternatives considered</h3>
+<ul>
+  <li><strong>GMSL2 camera over coax</strong> such as Leopard Imaging or e-con Systems modules. Sub 50 ms glass to pixel latency and global shutter, but requires a deserializer carrier and raises cost by several hundred dollars. Revisit only if IP camera latency proves to be the bottleneck.</li>
+  <li><strong>Thermal camera</strong> such as Axis Q1951-E or FLIR FC-Series. Makes night detection trivial and ignores headlight glare, but costs 3 to 6 times more and needs the detector fine tuned on thermal data. Recommended as a v2 second sensor rather than a replacement.</li>
+  <li><strong>USB 3 camera with active cable.</strong> Rejected. Active USB cables are unreliable under vibration and heat.</li>
+</ul>
+
+<h2 id="swa">7. Option A: DeepStream pipeline</h2>
+<p>DeepStream is NVIDIA's GStreamer based video analytics SDK. It provides hardware decode, batched TensorRT inference, a multi object tracker, and a region of interest analytics plugin as drop in elements. Most of this design is configuration rather than code.</p>
+<pre><code>rtspsrc latency=0 → rtph264depay → nvv4l2decoder → nvstreammux
+  → nvinfer (TrafficCamNet or YOLO11n engine, FP16, batch 1)
+  → nvtracker (NvDCF, config tracker_NvDCF_perf.yml)
+  → nvdsanalytics (lane polygon ROI, direction filter)
+  → probe callback: read NvDsAnalyticsObjInfo, run confirmation state machine, fire alert
+  → nvdsosd → nvv4l2h264enc → filesink (rolling evidence buffer)</code></pre>
+<h3>Model</h3>
+<p>Start with <strong>TrafficCamNet</strong> from NGC. It is a ResNet18 DetectNet_v2 detector trained on roadside views of cars, trucks, two wheelers and road signs, and ships as a pruned INT8 model that nvinfer loads directly. If recall on distant vehicles is insufficient, swap in a YOLO11n engine using the community DeepStream-Yolo parser. The rest of the pipeline is unchanged.</p>
+<h3>Lane polygon and direction</h3>
+<p>The nvdsanalytics configuration takes the polygon in image coordinates and a direction vector. Vehicles are reported as inside the ROI with a direction match, so the probe only needs to count consecutive frames and debounce.</p>
+<pre><code>[roi-filtering-stream-0]
+enable=1
+roi-ClosedLane=412;1080;690;1080;980;612;940;598
+inverse-roi=0
+class-id=0;1;2
+
+[direction-detection-stream-0]
+enable=1
+direction-Inbound=960;400;700;1000
+class-id=0;1;2</code></pre>
+<h3>Pros and cons</h3>
+<div class="two">
+  <div class="card"><h3>Pros</h3><ul>
+    <li>Zero copy from decoder to inference. Lowest CPU use, most headroom for a second camera.</li>
+    <li>Tracker and ROI analytics already written and tested.</li>
+    <li>Scales to 4 or more cameras by adding sources to nvstreammux.</li>
+    <li>TrafficCamNet is purpose trained on traffic camera views.</li>
+  </ul></div>
+  <div class="card"><h3>Cons</h3><ul>
+    <li>GStreamer debugging is unfriendly. Pipeline stalls show up as silence.</li>
+    <li>Version coupling between JetPack, DeepStream and TensorRT. Upgrades are all or nothing.</li>
+    <li>Custom logic lives in probe callbacks, which are awkward to unit test.</li>
+    <li>Steeper learning curve for contributors who have not used it.</li>
+  </ul></div>
+</div>
+
+<h2 id="swb">8. Option B: YOLO11n in plain Python</h2>
+<p>A conventional Python application. OpenCV pulls frames, a TensorRT engine exported from Ultralytics YOLO11n detects vehicles, ByteTrack assigns IDs, and Shapely tests each track against the lane polygon. Every stage is ordinary Python that can be run and tested on a laptop with a video file.</p>
+<pre><code>cap = cv2.VideoCapture(
+  "rtspsrc location=rtsp://cam/stream latency=0 ! rtph264depay ! h264parse "
+  "! nvv4l2decoder ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert "
+  "! video/x-raw,format=BGR ! appsink drop=true max-buffers=1", cv2.CAP_GSTREAMER)
+
+model = YOLO("yolo11n.engine")                 # exported with model.export(format="engine", half=True)
+lane  = Polygon(load_polygon("lane.json"))
+state = IntrusionState(confirm_frames=4, cooldown_s=8)
+
+while True:
+    ok, frame = cap.read()
+    res = model.track(frame, persist=True, tracker="bytetrack.yaml",
+                      classes=[2, 3, 5, 7], imgsz=640, verbose=False)[0]
+    for box, tid in zip(res.boxes.xyxy, res.boxes.id):
+        foot = Point((box[0] + box[2]) / 2, box[3])  # bottom centre
+        state.update(int(tid), lane.contains(foot), heading(tid, foot))
+    for event in state.pop_alarms():
+        alerts.fire(event); evidence.save_clip(event)</code></pre>
+<p>Using a GStreamer capture string keeps decode on NVDEC even without DeepStream. The only CPU cost is the colour conversion and one memory copy per frame, which is fine for one 1080p stream on Orin Nano.</p>
+<h3>Model</h3>
+<p><strong>YOLO11n</strong> pretrained on COCO already covers car, motorcycle, bus and truck. Export once on the Jetson with FP16 and 640 px input. Expected throughput on Orin Nano Super is about 90 fps for inference alone. A later fine tune on 1,000 to 2,000 frames from real work zones will improve recall on small distant vehicles and on construction equipment that COCO never saw.</p>
+<h3>Pros and cons</h3>
+<div class="two">
+  <div class="card"><h3>Pros</h3><ul>
+    <li>Readable, testable Python. Intrusion logic is a pure function with unit tests.</li>
+    <li>Runs on a developer laptop against recorded video with no Jetson.</li>
+    <li>Easy to swap models, trackers, or add a radar input.</li>
+    <li>Ultralytics handles export, tracking and ONNX quirks.</li>
+  </ul></div>
+  <div class="card"><h3>Cons</h3><ul>
+    <li>One CPU copy per frame. Fine for 1 to 2 cameras, tight beyond that.</li>
+    <li>Python GIL means a second camera should be a second process.</li>
+    <li>Ultralytics is AGPL licensed. A commercial product needs their enterprise license or a swap to a permissively licensed YOLO.</li>
+    <li>You own the evidence recorder and the health monitoring.</li>
+  </ul></div>
+</div>
+
+<h2 id="cmp">9. Comparison and recommendation</h2>
+<div class="tbl"><table>
+<tr><th>Criterion</th><th>A: DeepStream</th><th>B: YOLO11n Python</th></tr>
+<tr><td>Time to first working demo</td><td><span class="pill w">2 to 3 weeks</span></td><td><span class="pill g">3 to 5 days</span></td></tr>
+<tr><td>Latency, decode to alert</td><td><span class="pill g">15 to 25 ms</span></td><td><span class="pill g">25 to 40 ms</span></td></tr>
+<tr><td>CPU load, 1 camera</td><td><span class="pill g">~10%</span></td><td><span class="pill w">~35%</span></td></tr>
+<tr><td>Cameras per Orin Nano</td><td><span class="pill g">4</span></td><td><span class="pill w">2</span></td></tr>
+<tr><td>Testability on laptop</td><td><span class="pill b">Needs NVIDIA GPU + container</span></td><td><span class="pill g">Any machine, CPU ok</span></td></tr>
+<tr><td>Ease of adding radar fusion</td><td><span class="pill w">Custom plugin or probe</span></td><td><span class="pill g">Plain Python</span></td></tr>
+<tr><td>Licensing for commercial use</td><td><span class="pill g">Free with NVIDIA hardware</span></td><td><span class="pill w">AGPL unless licensed</span></td></tr>
+<tr><td>Operational maturity</td><td><span class="pill g">Production grade</span></td><td><span class="pill w">You build it</span></td></tr>
+</table></div>
+<div class="callout"><strong>Recommendation.</strong> Build the prototype and field trials on Option B. It gets a camera on a tripod and an alarm firing within a week, and the intrusion logic, polygon tool, evidence recorder and alert outputs all carry over. Move the inference pipeline to Option A when either of two things happens: a third camera is needed per box, or the product goes commercial and AGPL becomes a problem. Design the code so the detector and tracker sit behind one interface that yields <code>(track_id, class, bbox)</code> tuples, which is all the intrusion logic consumes.</div>
+
+<h2 id="logic">10. Intrusion logic</h2>
+<p>Identical in both options. The detector and tracker produce a stream of tracked boxes; this layer decides when to alarm.</p>
+<ol>
+  <li><strong>Anchor point.</strong> Use the bottom centre of the bounding box as the vehicle's position on the road surface. It is far less sensitive to vehicle height than the box centre.</li>
+  <li><strong>Containment.</strong> Test the anchor against the closed lane polygon drawn at setup.</li>
+  <li><strong>Heading.</strong> Compute displacement over the last 5 frames. Require a component toward the crew greater than a threshold, which rejects vehicles backing out or stopped at the taper.</li>
+  <li><strong>Confirmation.</strong> Alarm only after 4 consecutive frames inside with inbound heading. At 30 fps that is 133 ms and removes single frame tracker jitter.</li>
+  <li><strong>Exit grace.</strong> A track that leaves the polygon within the confirmation window is a late merge, not an intrusion. Log it as a near miss.</li>
+  <li><strong>Cooldown.</strong> One alarm per track, and a global 8 second cooldown so a platoon does not produce a continuous horn.</li>
+  <li><strong>Speed estimate.</strong> Use a 4 point homography from the polygon corners to road coordinates to convert pixel displacement into mph for the event log. Accuracy of ±10% is adequate for evidence.</li>
+</ol>
+<h3>Implementation sequence</h3>
+<p>Per frame flow through the <code>laneguard</code> package, as implemented in Option B. The DeepStream variant replaces the capture, detector and tracker participants with GStreamer elements; the IntrusionState, Evidence and Alerter steps are identical.</p>
+<pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant Cam as IP camera / file
+    participant Cap as capture.open_source
+    participant App as app.main loop
+    participant Det as YOLO11n TensorRT
+    participant Trk as ByteTrack
+    participant Int as IntrusionState
+    participant Ev as Evidence buffer
+    participant Al as Alerter GPIO
+    participant Disk as events/ on NVMe
+
+    Note over Cap: Jetson uses rtspsrc to nvv4l2decoder to appsink.<br/>Desktop uses OpenCV CPU decode.
+    App->>Cap: read
+    Cap-->>App: BGR frame and timestamp t
+
+    opt --enhance flag
+        App->>App: gamma + CLAHE
+    end
+
+    App->>Det: track frame at 640 px, vehicle classes only
+    Det->>Det: preprocess, FP16 inference ~12 ms, NMS
+    Det->>Trk: detections xyxy, conf, cls
+    Trk->>Trk: Kalman predict, IoU match, assign IDs
+    Trk-->>App: boxes with persistent track ids
+
+    loop every tracked box
+        App->>Int: update track_id, bbox, t
+        Int->>Int: anchor = bottom centre of bbox
+        Int->>Int: inside = point_in_polygon anchor, lane
+        Int->>Int: speed = 5 frame displacement dot crew_direction
+        alt inside and speed >= min_speed
+            Int->>Int: inside_run += 1
+            opt inside_run >= confirm_frames and not alarmed and cooldown elapsed
+                Int->>Int: alarmed = true, last_alarm_t = t
+                Int->>Int: queue Event alarm
+            end
+        else left polygon before confirmation
+            Int->>Int: queue Event near_miss and reset inside_run
+        else outside or stopped or outbound
+            Int->>Int: inside_run = 0
+        end
+    end
+
+    App->>Int: end_frame t
+    Int->>Int: drop tracks unseen > track_timeout_s
+    App->>Ev: push frame
+    Ev->>Ev: append to 5 s ring buffer and to any open clip
+
+    App->>Int: pop_events
+    Int-->>App: events
+
+    loop each event
+        alt kind == alarm
+            App->>Al: fire event
+            Al->>Al: log WARNING
+            Al->>Al: GPIO relay HIGH for 3 s on a thread
+            App->>Ev: start_clip event, meta
+            Ev->>Ev: snapshot ring buffer, collect 5 s more
+        else kind == near_miss
+            App->>App: log INFO
+        end
+    end
+
+    opt 5 s after an alarm
+        Ev->>Disk: write mp4 with pre and post frames, and json with track, speed, polygon
+    end
+
+    opt --show flag
+        App->>App: draw polygon, boxes, anchors, fps
+    end
+
+    Note over App,Disk: On end of stream or Ctrl-C, Evidence.flush writes partial clips,<br/>Alerter.close releases GPIO, and the summary logs frames and fps
+</pre>
+<p>Timing on the T400 development box: capture plus decode 2 to 15 ms depending on resolution, inference 12 ms, tracker and intrusion logic under 2 ms, evidence push under 1 ms. The alarm decision is made on the frame that completes the confirmation run, so the decision latency after a vehicle enters the lane is <code>confirm_frames / fps</code>, 133 ms at 30 fps with four frames.</p>
+<h3>Setup flow</h3>
+<p>A crew member connects a tablet to the Jetson's Wi-Fi hotspot, sees the live camera frame, taps the four corners of the closed lane, taps the direction of the crew, and saves. The polygon is stored as image coordinates with a snapshot of the frame so a shifted camera can be detected later by comparing frames.</p>
+
+<h2 id="alert">11. Alerting and evidence</h2>
+<p><strong>Warn locally and record the event.</strong> Connect the Jetson to an alarm controller for a siren, strobe, and potentially vibrating wearables. Keep the warning path operational without internet access; use connectivity only for event review and remote monitoring. The FHWA assessment of work zone intrusion alert technologies discusses audible, visual, and haptic alerts and found that crews respond fastest to a combination of all three, which is why the tiers below use a horn, a strobe, and wearables together.</p>
+<ul>
+  <li><strong>Tier 1, local:</strong> relay closes strobe and horn within 30 ms of the decision. No software between the decision and the relay beyond a GPIO write.</li>
+  <li><strong>Tier 2, wearables:</strong> LoRa broadcast to vibrating armbands. Separate radio so a Wi-Fi outage does not matter.</li>
+  <li><strong>Tier 3, record:</strong> write a 10 second clip, 5 seconds before and 5 after, from the rolling buffer. Store JSON with track path, speed, polygon, and timestamps. Upload over LTE when available.</li>
+  <li><strong>Closure metadata:</strong> at setup the operator links the deployment to its Caltrans Lane Closure System record from the web interface, by district, text search, or nearest active closures. The closure index, ID and log number, route, postmile range, direction, type of work, type of closure and lanes closed are stamped into every event JSON, along with crew, operator and notes. Events then join directly to Caltrans records without manual matching. See the LCS field reference at cwwp2.dot.ca.gov/documentation/lcs.</li>
+  <li><strong>Health:</strong> heartbeat every 5 seconds to a watchdog. Loss of frames for 2 seconds, camera disconnect, or a frozen image triggers a distinct fault tone so the crew knows the system is blind rather than quiet.</li>
+</ul>
+
+<h2 id="deploy">12. Deployment and operations</h2>
+<ul>
+  <li>Jetson boots to a systemd service that starts the pipeline. No login required.</li>
+  <li>Application ships as a container on the JetPack base image so a field unit updates by pulling one image.</li>
+  <li>Camera mounts on a 12 ft mast on the attenuator truck or on the first arrow board trailer. A rigid mount matters more than height. Vibration moves the polygon.</li>
+  <li>Daily start of shift check: open the tablet view, confirm the polygon overlays the lane, drive a pickup through the closed lane at low speed and confirm the alarm fires.</li>
+</ul>
+
+<h2 id="risks">13. Risks and mitigations</h2>
+<div class="tbl"><table>
+<tr><th>Risk</th><th>Severity</th><th>Mitigation</th></tr>
+<tr><td>Headlight glare at night washes out detections</td><td><span class="pill b">High</span></td><td>Large sensor with true WDR, fixed short exposure, camera mounted high and angled down. Thermal second camera in v2. Confirmed 2026-10-10: pretrained YOLO11 n, s and m all missed headlight-facing cars on an unlit night clip, and CLAHE enhancement made it worse. Fine tuning on night footage is now on the critical path.</td></tr>
+<tr><td>Camera shake invalidates polygon</td><td><span class="pill b">High</span></td><td>Rigid mount, frame diff against setup snapshot, auto fault if the scene shifts more than 20 px.</td></tr>
+<tr><td>Distant cars too small for detector</td><td><span class="pill w">Medium</span></td><td>8 mm or longer lens, 640 px or larger inference, fine tune on work zone data.</td></tr>
+<tr><td>False alarms from legitimate late merges</td><td><span class="pill w">Medium</span></td><td>Heading check, exit grace window, placement of entry line at the taper not before it.</td></tr>
+<tr><td>Rain, fog, snow on lens</td><td><span class="pill w">Medium</span></td><td>Sun shield and hydrophobic coating. Radar fusion is the real fix and is the top v2 item.</td></tr>
+<tr><td>IP camera latency exceeds budget</td><td><span class="pill w">Medium</span></td><td>Measure with a flashing LED in frame. Fall back to GMSL camera if over 150 ms.</td></tr>
+<tr><td>Thermal throttling in summer</td><td><span class="pill g">Low</span></td><td>Fanless industrial carrier rated to 60 °C, 15 W power mode.</td></tr>
+</table></div>
+
+<h2 id="plan">14. Plan</h2>
+<ol>
+  <li><strong>Week 1.</strong> Order Orin Nano Super dev kit, Hanwha camera, PoE injector, relay HAT. Record 2 hours of work zone video from a safe spot for offline development.</li>
+  <li><strong>Week 2.</strong> Option B running on a laptop against recorded video. Polygon tool, intrusion state machine with unit tests, event JSON.</li>
+  <li><strong>Week 3.</strong> Move to Jetson. Export TensorRT engine, measure fps and latency with the LED method, wire relay and strobe.</li>
+  <li><strong>Week 4.</strong> Controlled test on a closed lot with a vehicle driving into the polygon at 20, 40 and 55 mph. Tune confirmation frames and heading threshold.</li>
+  <li><strong>Weeks 5 to 8.</strong> Shadow mode on a real closure with alarms muted. Collect false alarm and miss statistics against a human log. Fine tune the model on collected frames.</li>
+  <li><strong>Decision point.</strong> Review false alarm rate against R8. Decide whether to port to DeepStream based on camera count and licensing needs.</li>
+</ol>
+<p><small class="src">Prices and model numbers are current as of October 2026 and should be reverified at purchase. Pixel width figures assume a 1/1.8 inch sensor at 1920 px horizontal and a 6 ft wide car.</small></p>
+</main>
+</div>

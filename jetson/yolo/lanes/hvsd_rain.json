@@ -1,0 +1,33 @@
+{
+  "polygon": [
+    [
+      0,
+      345
+    ],
+    [
+      704,
+      225
+    ],
+    [
+      704,
+      275
+    ],
+    [
+      0,
+      400
+    ]
+  ],
+  "crew_direction": [
+    1.0,
+    -0.6
+  ],
+  "confirm_frames": 4,
+  "heading_min_speed_px": 2.0,
+  "cooldown_s": 3.0,
+  "frame_size": [
+    704,
+    432
+  ],
+  "source": "data/video/hvsd/Dataset/rain.mp4",
+  "note": "Lane adjacent to the concrete barrier on the near carriageway. Tracks move bottom-left to top-right, so the crew is assumed at the top right."
+}

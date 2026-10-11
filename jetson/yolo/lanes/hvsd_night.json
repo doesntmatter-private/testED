@@ -1,0 +1,37 @@
+{
+  "polygon": [
+    [
+      600,
+      120
+    ],
+    [
+      700,
+      100
+    ],
+    [
+      1280,
+      470
+    ],
+    [
+      1280,
+      590
+    ],
+    [
+      1000,
+      590
+    ]
+  ],
+  "crew_direction": [
+    1.0,
+    0.6
+  ],
+  "confirm_frames": 4,
+  "heading_min_speed_px": 2.0,
+  "cooldown_s": 3.0,
+  "frame_size": [
+    1280,
+    590
+  ],
+  "source": "data/video/hvsd/Dataset/night.mp4",
+  "note": "Right lane of the near carriageway. Headlights face the camera so traffic approaches, moving down-right. Pretrained YOLO11n detects none of these cars; only far carriageway taillights are picked up."
+}

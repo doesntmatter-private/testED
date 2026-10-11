@@ -1,0 +1,9 @@
+{
+  "polygon": [[700, 1080], [1200, 1080], [1000, 500], [900, 500]],
+  "crew_direction": [0, 1],
+  "confirm_frames": 4,
+  "heading_min_speed_px": 2.0,
+  "cooldown_s": 8.0,
+  "frame_size": [1920, 1080],
+  "source": "example"
+}
